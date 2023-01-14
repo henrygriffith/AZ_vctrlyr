@@ -5,16 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quick Start</title>
     <style>
-      #map {
-        width: 100%;
-        height: 100%;
-      }
     </style>
   </head>
   <body>
-    <div id="map"></div>
-    <div id="info">&nbsp;</div>
+    <div id="main-cont">
+      <div id="map"></div>
+      <div id="info-col">
+        <div id="er-info">
+          <span id="prec-info-line">
+            <div id="prec-info-line-names">
+              <span id="county-name"></span>
+              <span id="symbol">::</span>
+              <span id="prec-name"></span>
+            </div>
+            <span id="tot-votes"></span>
+          </span>
+          <div id="votes-cont"></div>
+        </div>
+        <div id="contest-select"></div>
+      </div>
+    </div>
     <script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
     <script type="module" src="./main.js"></script>
+    <!-- <script type="module" src="./parseER.js"></script> -->
   </body>
 </html>
