@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 console.log(typeof __dirname);
 
-// ran this file once to compile er2022.json since this function can't be called on the clientside.
+// ran this file once to compile er2022.json since this function can't 
+// be called on the clientside due to node backend-only imports.
 
 const getRowsFromCSV = () => {
   let results = [];

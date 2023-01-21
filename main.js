@@ -9,27 +9,22 @@ import GeoJSON from 'ol/format/GeoJSON.js';
 import {fromLonLat} from 'ol/proj.js';
 import {Fill, Stroke, Style} from 'ol/style.js'
 
-import {pnameConversionChart} from './util'
-
+import {pnameConversionChart, partyColors} from './util'
 
 // 'npm start' for live server in browser
 let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
-let selectedContest, defaultContest = "GOVERNOR";
+let defaultContest = "GOVERNOR";
+let selectedContest = defaultContest;
+let contestsAreDisplayed = false;
 let elec_results;
 
-const style = new Style({
-  fill: new Fill({
-    color: '#eeeeee'
-  })
-})
-
+// ############# LAYERS ##############
 const map = new Map({
   target: 'map',
   layers: [
     new TileLayer({
       source: new OSM(),
-      // visible: false,
     }),
   ],
   view: new View({
@@ -54,7 +49,81 @@ const AZPrecincts = new VectorLayer({
   visible: true,
   title: '2022 AZ Precincts'
 });
+
 map.addLayer(AZPrecincts);
+
+
+
+// ################################
+
+(function initializeContestName() {
+  const contest_ele = document.getElementById('contest-name')
+  contest_ele.innerHTML = defaultContest;
+})()
+
+function changeContestName(newContest) {
+  const contest_ele = document.getElementById('contest-name')
+
+  contest_ele.innerHTML = newContest;
+}
+
+const calculateVotingWeight = (contest) => {
+  let total = contest.total;
+  let demVotes, repVotes
+  for (const cand of contest.candidates) {
+    if (cand.party == "DEM") demVotes = cand.votes;
+    if (cand.party == "REP") repVotes = cand.votes;
+    continue;
+  }
+  const metric = ((demVotes - repVotes)/total) * 100;
+  return metric
+}
+
+const getPartyColor = (weight) => {
+  let clr;
+  if (weight > 0) {
+    if (weight >= 15) clr = partyColors["DEMOCRATIC"]
+    else if (weight >= 5 && weight < 15) clr = partyColors["DEMOCRATIC_BRIGHT"]
+    else clr = partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
+  } else if (weight < 0) {
+    if (weight <= -15) clr = partyColors["REPUBLICAN"]
+    else if (weight > -15 && weight <= -5) clr = partyColors["REPUBLICAN_BRIGHT"]
+    else clr = partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
+  }
+  return clr;
+}
+
+const colorizePrecincts = (contestName) => {
+  const precinctSource = AZPrecincts.getSource();
+    if (precinctSource.getState() === 'ready') {
+      const features = precinctSource.getFeatures();
+      features.forEach((f) => {
+        let {County: county, pct_num: code, pct_name: pname} = f.values_;
+        county = county.toUpperCase();
+        pname = county == 'COCONINO' 
+          ? pnameConversionChart[county][year](pname, code) 
+          : county == 'PIMA' ? pnameConversionChart[county][year](code) 
+          : pnameConversionChart[county][year](pname);
+
+
+        let metric, clr;
+        try {
+          metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName])
+          clr = getPartyColor(Number(metric))
+        } catch(e) {console.error(e)}
+
+        let newStyle = new Style({
+          fill: new Fill({
+            color: clr
+          }),
+          stroke: new Stroke({
+            color: "white"
+          })
+        })
+        f.setStyle(newStyle);
+      })
+    }
+}
 
 const featureOverlay = new VectorLayer({
   source: new VectorSource(),
@@ -94,8 +163,6 @@ const displayFeatureInfo = function (pixel) {
     const prec_obj = getPrecinctVotes(county, pname);
     const curr_contest = selectedContest || defaultContest;
     getAndWriteCandidates(prec_obj, county, pname, curr_contest);
-    // then contest selector
-    // then color matching - follow marks
   }
 
   if (feature !== highlight) {
@@ -119,10 +186,10 @@ const getAndWriteCandidates = (prec_obj, county, pname, contest) => {
     votes_box.innerHTML = ''
   }
   const tot_votes_ele = document.getElementById("tot-votes");
-  const curr_contest = prec_obj["contests"][contest]
+  const curr_contest = prec_obj["contests"][contest] || {}
   tot_votes_ele.innerHTML = curr_contest["total"]
 
-  curr_contest.candidates.forEach((cand) => {
+  curr_contest.candidates?.forEach((cand) => {
     const candLine = document.createElement("span")
     candLine.setAttribute('class', 'cand-line')
     const candName = document.createElement("span")
@@ -134,50 +201,47 @@ const getAndWriteCandidates = (prec_obj, county, pname, contest) => {
     candPerc.setAttribute('class', 'percentage')
     candPerc.innerHTML = `${(cand.votes / curr_contest["total"] * 100).toFixed(2)} %`
 
-    // const bar = document.createElement('div')
-    // bar.setAttribute('class', 'vote-progress-bar')
-    // const party = cand.party;
-    // const votes_bar = document.createElement('div')
-    // const color = party == 'DEM' ? "red" : party == 'REP' ? "blue" : "white"
-    // votes_bar.style.backgroundColor = color;
-
-    // console.log(bar.offsetWidth);
-    // const widthy = bar.style.width * cand.votes / curr_contest["total"] * 100
-    // votes_bar.style.width = widthy;
-
     candLine.appendChild(candName)
     candVotesCont.appendChild(candVotes)
     candVotesCont.appendChild(candPerc)
-    // bar.appendChild(votes_bar)
-    // candLine.appendChild(bar)
     candLine.appendChild(candVotesCont)
     votes_box.appendChild(candLine)
   })
 }
 
 const displayContests = () => {
-  console.log('called')
+  console.log("ATTEMPTING TO DISPLAY CONTESTS...")
+
   const contestContainer = document.getElementById('contest-select')
   for (const cont_name of contest_arr) {
     const contest = document.createElement('span')
     contest.innerHTML = cont_name;
     contest.setAttribute('class', 'contest');
+
     contest.addEventListener('click', function() {
+      changeContestName(contest.innerHTML);
       selectedContest = contest.innerHTML;
+
+      // When the contest is clicked/changed, recalculate colors (probably would cache these)
+      colorizePrecincts(cont_name)
     })
     contestContainer.appendChild(contest)
   }
+  console.log("CONTESTS DISPLAYED AND EQUIPPED WITH EVENT LISTENERS")
 }
 
 // ############ EVENTS #############
-map.on('loadstart',async function(evt){
+map.on('loadstart', async function(evt){
   fetch('./data/er2022.json')
     .then((response) => response.json())
     .then((json) => {
       elec_results = json
-      // console.log(elec_results)
-    });
-  displayContests();
+    }).then(() => {
+      if (contestsAreDisplayed === false) {
+        displayContests();
+        contestsAreDisplayed = true;
+      }
+  });
 });
 
 map.on('pointermove', function (evt) {
@@ -186,6 +250,7 @@ map.on('pointermove', function (evt) {
   }
   const pixel = map.getEventPixel(evt.originalEvent);
   displayFeatureInfo(pixel);
+  
 })
 
 map.on('click', function (evt) {
