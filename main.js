@@ -14,7 +14,7 @@ import {pnameConversionChart, partyColors} from './util'
 // 'npm start' for live server in browser
 let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
-let defaultContest = "GOVERNOR";
+let defaultContest = contest_arr[0];
 let selectedContest = defaultContest;
 let contestsAreDisplayed = false;
 let elec_results;
@@ -46,49 +46,43 @@ const AZPrecincts = new VectorLayer({
       color: 'charcoal',
     }),
   }),
-  visible: true,
   title: '2022 AZ Precincts'
 });
 
 map.addLayer(AZPrecincts);
-
-
-
 // ################################
 
+
 (function initializeContestName() {
-  const contest_ele = document.getElementById('contest-name')
-  contest_ele.innerHTML = defaultContest;
+  document.getElementById('contest-name').innerHTML = defaultContest;
 })()
 
-function changeContestName(newContest) {
-  const contest_ele = document.getElementById('contest-name')
-
-  contest_ele.innerHTML = newContest;
+function setContestName(contest) {
+  document.getElementById('contest-name').innerHTML = contest;
 }
 
 const calculateVotingWeight = (contest) => {
-  let total = contest.total;
-  let demVotes, repVotes
-  for (const cand of contest.candidates) {
+  const {total, candidates} = contest;
+  let demVotes, repVotes;
+  for (const cand of candidates) {
     if (cand.party == "DEM") demVotes = cand.votes;
     if (cand.party == "REP") repVotes = cand.votes;
-    continue;
   }
   const metric = ((demVotes - repVotes)/total) * 100;
-  return metric
+  return metric.toFixed(2);
 }
 
 const getPartyColor = (weight) => {
   let clr;
+
   if (weight > 0) {
-    if (weight >= 15) clr = partyColors["DEMOCRATIC"]
-    else if (weight >= 5 && weight < 15) clr = partyColors["DEMOCRATIC_BRIGHT"]
-    else clr = partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
+    clr = weight >= 15 ? partyColors["DEMOCRATIC"]
+      : (weight >= 5 && weight < 15) ? partyColors["DEMOCRATIC_BRIGHT"]
+      : partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
   } else if (weight < 0) {
-    if (weight <= -15) clr = partyColors["REPUBLICAN"]
-    else if (weight > -15 && weight <= -5) clr = partyColors["REPUBLICAN_BRIGHT"]
-    else clr = partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
+    clr = weight <= -15 ? partyColors["REPUBLICAN"] 
+      : (weight > -15 && weight <= -5) ? partyColors["REPUBLICAN_BRIGHT"] 
+      : partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
   }
   return clr;
 }
@@ -96,31 +90,25 @@ const getPartyColor = (weight) => {
 const colorizePrecincts = (contestName) => {
   const precinctSource = AZPrecincts.getSource();
     if (precinctSource.getState() === 'ready') {
-      const features = precinctSource.getFeatures();
-      features.forEach((f) => {
-        let {County: county, pct_num: code, pct_name: pname} = f.values_;
+      precinctSource.getFeatures().forEach((f) => {
+        let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
         county = county.toUpperCase();
-        pname = county == 'COCONINO' 
-          ? pnameConversionChart[county][year](pname, code) 
-          : county == 'PIMA' ? pnameConversionChart[county][year](code) 
-          : pnameConversionChart[county][year](pname);
-
+        pname = pnameConversionChart[county][year](pname, pnum) 
 
         let metric, clr;
         try {
           metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName])
-          clr = getPartyColor(Number(metric))
+          clr = getPartyColor(metric)
         } catch(e) {console.error(e)}
 
-        let newStyle = new Style({
+        f.setStyle(new Style({
           fill: new Fill({
             color: clr
           }),
           stroke: new Stroke({
-            color: "white"
+            color: 'rgba(255, 255, 255, 1)',
           })
-        })
-        f.setStyle(newStyle);
+        }))
       })
     }
 }
@@ -130,8 +118,8 @@ const featureOverlay = new VectorLayer({
   map: map,
   style: new Style({
     stroke: new Stroke({
-      color: 'rgba(255, 255, 255, 0.7)',
-      width: 2,
+      color: 'rgba(255, 255, 255, 1)',
+      width: 10,
     }),
   }),
 })
@@ -150,19 +138,15 @@ const displayFeatureInfo = function (pixel) {
     let county = feature.get('County').toUpperCase();
     let code = feature.get('pct_num');
     let pname = feature.get('pct_name')
-    //
-
-    pname = county == 'COCONINO' ? pnameConversionChart[county][year](pname, code) 
-      : county == 'PIMA' ? pnameConversionChart[county][year](code) 
-      : pnameConversionChart[county][year](pname);
-
+    pname = pnameConversionChart[county][year](pname, code) 
+      
     county_ele.innerHTML = county
     symbol_ele.innerHTML = "::"
     pname_ele.innerHTML = pname || '&nbsp;';
 
     const prec_obj = getPrecinctVotes(county, pname);
     const curr_contest = selectedContest || defaultContest;
-    getAndWriteCandidates(prec_obj, county, pname, curr_contest);
+    getAndWriteCandidates(prec_obj, curr_contest);
   }
 
   if (feature !== highlight) {
@@ -180,13 +164,11 @@ const getPrecinctVotes = (county, pname) => {
   return elec_results[county][pname]
 };
 
-const getAndWriteCandidates = (prec_obj, county, pname, contest) => {
+const getAndWriteCandidates = (prec_obj, contest) => {
   const votes_box = document.getElementById('votes-cont')
-  if (votes_box.hasChildNodes()) {
-    votes_box.innerHTML = ''
-  }
-  const tot_votes_ele = document.getElementById("tot-votes");
+  if (votes_box.hasChildNodes()) votes_box.innerHTML = ''
   const curr_contest = prec_obj["contests"][contest] || {}
+  const tot_votes_ele = document.getElementById("tot-votes");
   tot_votes_ele.innerHTML = curr_contest["total"]
 
   curr_contest.candidates?.forEach((cand) => {
@@ -219,7 +201,7 @@ const displayContests = () => {
     contest.setAttribute('class', 'contest');
 
     contest.addEventListener('click', function() {
-      changeContestName(contest.innerHTML);
+      setContestName(contest.innerHTML);
       selectedContest = contest.innerHTML;
 
       // When the contest is clicked/changed, recalculate colors (probably would cache these)

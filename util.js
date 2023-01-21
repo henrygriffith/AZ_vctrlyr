@@ -1,37 +1,32 @@
 
 export const pnameConversionChart = {
-    "APACHE": { 2022: (pname) => removeNumsFromFront(pname)},
-    "COCHISE": { 2022: (pname) => pname.toUpperCase()},
+    "APACHE": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
+    "COCHISE": { 2022: (pname, pnum) => pname.toUpperCase()},
     "COCONINO": { 2022: (pname, pnum) => {
       if (pname.indexOf('Flagstaff') != -1) return `${pname.toUpperCase()} ${pnum}`
       else return pname.toUpperCase()
     }},
-    "GILA": { 2022: (pname) => {
+    "GILA": { 2022: (pname, pnum) => {
       pname = pname.toUpperCase()
-      if (pname.includes("SAN CARLOS")) {
-        return pname.replace(" COMMUNITY", "")
-      }
+      if (pname.includes("SAN CARLOS")) return pname.replace(" COMMUNITY", "")
       return pname
     }},
-    "GRAHAM": { 2022: (pname) => {
+    "GRAHAM": { 2022: (pname, pnum) => {
       pname = pname.toUpperCase();
-      if (pname.includes("FT."))
-        return pname.replace("FT.", "FORT")
+      if (pname.includes("FT.")) return pname.replace("FT.", "FORT")
       return pname
     }},
-    "GREENLEE": { 2022: (pname) => removeNumsFromFront(pname)},
-    "LA PAZ": { 2022: (pname) => removeNumsFromFront(pname)},
-    "MARICOPA": { 2022: (pname) => pname.toUpperCase()},
-    "MOHAVE": { 2022: (pname) => pname.toUpperCase()},
-    "NAVAJO": { 2022: (pname) => removeNumsFromFront(pname)},
-    "PIMA": { 2022: (pnum) => "PRECINCT " + pnum.padStart(3, "0")},
-    "PINAL": { 2022: (pname) => pname.toUpperCase()},
-    "SANTA CRUZ": { 2022: (pname) => pname.toUpperCase()},
-    "YAVAPAI": { 2022: (pname) => pname.toUpperCase()},
-    "YUMA": { 2022: (pname) => {
-      if (pname.length >= 3) {
-        pname = pname.slice(0, pname.indexOf("01"));
-      }
+    "GREENLEE": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
+    "LA PAZ": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
+    "MARICOPA": { 2022: (pname, pnum) => pname.toUpperCase()},
+    "MOHAVE": { 2022: (pname, pnum) => pname.toUpperCase()},
+    "NAVAJO": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
+    "PIMA": { 2022: (pname, pnum) => "PRECINCT " + pnum.padStart(3, "0")},
+    "PINAL": { 2022: (pname, pnum) => pname.toUpperCase()},
+    "SANTA CRUZ": { 2022: (pname, pnum) => pname.toUpperCase()},
+    "YAVAPAI": { 2022: (pname, pnum) => pname.toUpperCase()},
+    "YUMA": { 2022: (pname, pnum) => {
+      if (pname.length >= 3) pname = pname.slice(0, pname.indexOf("01"));
       return "PRECINCT " + pname.padStart(3, "0")
     }}
   }
