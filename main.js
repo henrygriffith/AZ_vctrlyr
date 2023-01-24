@@ -19,6 +19,13 @@ let selectedContest = defaultContest;
 let contestsAreDisplayed = false;
 let elec_results;
 
+// let standardDEMBlue = [0, 125, 237]
+// let standardREPRed = [227, 51, 61];
+
+let standardBlue = [0, 0, 255];
+let standardRed = [255, 0, 0];
+
+
 // ############# LAYERS ##############
 const map = new Map({
   target: 'map',
@@ -61,31 +68,52 @@ function setContestName(contest) {
   document.getElementById('contest-name').innerHTML = contest;
 }
 
-const calculateVotingWeight = (contest) => {
+const calculateVotingWeight = (contest, isContinuous) => {
   const {total, candidates} = contest;
   let demVotes, repVotes;
   for (const cand of candidates) {
     if (cand.party == "DEM") demVotes = cand.votes;
     if (cand.party == "REP") repVotes = cand.votes;
   }
-  const metric = ((demVotes - repVotes)/total) * 100;
-  return metric.toFixed(2);
+
+  const basic_metric = (((demVotes - repVotes)/total) * 100).toFixed(2);
+  const ranged_metric = (demVotes/total).toFixed(2);
+
+  return isContinuous ? ranged_metric : basic_metric;
 }
 
-const getPartyColor = (weight) => {
+const getQuantizedPartyColor = (weight) => {
   let clr;
 
   if (weight > 0) {
-    clr = weight >= 15 ? partyColors["DEMOCRATIC"]
-      : (weight >= 5 && weight < 15) ? partyColors["DEMOCRATIC_BRIGHT"]
+    clr = weight >= 22.5 ? partyColors["DEMOCRATIC"]
+      : (weight >= 10 && weight < 22.5) ? partyColors["DEMOCRATIC_BRIGHT"]
       : partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
   } else if (weight < 0) {
     clr = weight <= -15 ? partyColors["REPUBLICAN"] 
-      : (weight > -15 && weight <= -5) ? partyColors["REPUBLICAN_BRIGHT"] 
+      : (weight > -15 && weight <= -10) ? partyColors["REPUBLICAN_BRIGHT"] 
       : partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
   }
   return clr;
 }
+
+const getContinuousPartyColor = (weight) => {
+  return interpolateColor(standardRed, standardBlue, weight)
+}
+
+// red to blue
+const interpolateColor = (c1, c2, val) => {
+  let [rdem, gdem, bdem] = c1;
+  let [rrep, grep, brep] = c2;
+
+  let lerpr = rdem + (rrep - rdem) * val;
+  let lerpg = gdem + (grep - gdem) * val;
+  let lerpb = bdem + (brep - bdem) * val;
+
+  return `rgb(${lerpr}, ${lerpg}, ${lerpb})`
+}
+
+let isContinuous = true;
 
 const colorizePrecincts = (contestName) => {
   const precinctSource = AZPrecincts.getSource();
@@ -97,8 +125,8 @@ const colorizePrecincts = (contestName) => {
 
         let metric, clr;
         try {
-          metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName])
-          clr = getPartyColor(metric)
+          metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName], isContinuous)
+          clr = isContinuous ? getContinuousPartyColor(metric) : getQuantizedPartyColor(metric)
         } catch(e) {console.error(e)}
 
         f.setStyle(new Style({
@@ -119,7 +147,7 @@ const featureOverlay = new VectorLayer({
   style: new Style({
     stroke: new Stroke({
       color: 'rgba(255, 255, 255, 1)',
-      width: 10,
+      width: 2,
     }),
   }),
 })
