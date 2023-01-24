@@ -64,6 +64,12 @@ map.addLayer(AZPrecincts);
   document.getElementById('contest-name').innerHTML = defaultContest;
 })()
 
+function initializeSelectListener() {
+  const select = document.getElementById('visual-select')
+  select.addEventListener('change', handleSelectChange)
+}
+initializeSelectListener()
+
 function setContestName(contest) {
   document.getElementById('contest-name').innerHTML = contest;
 }
@@ -113,7 +119,7 @@ const interpolateColor = (c1, c2, val) => {
   return `rgb(${lerpr}, ${lerpg}, ${lerpb})`
 }
 
-let isContinuous = true;
+let isContinuous = false;
 
 const colorizePrecincts = (contestName) => {
   const precinctSource = AZPrecincts.getSource();
@@ -140,6 +146,15 @@ const colorizePrecincts = (contestName) => {
       })
     }
 }
+
+function handleSelectChange() {
+  const val = document.getElementById('visual-select').value;
+  if (val === "CONTINUOUS BASIC") isContinuous = true;
+  else isContinuous = false;
+
+  colorizePrecincts(selectedContest)
+}
+
 
 const featureOverlay = new VectorLayer({
   source: new VectorSource(),
@@ -203,7 +218,7 @@ const getAndWriteCandidates = (prec_obj, contest) => {
     const candLine = document.createElement("span")
     candLine.setAttribute('class', 'cand-line')
     const candName = document.createElement("span")
-    candName.innerHTML = cand.name
+    candName.innerHTML = cand.name + ' (' + cand.party + ')'
     const candVotesCont = document.createElement('div');
     const candVotes = document.createElement("span")
     candVotes.innerHTML = cand.votes
@@ -239,6 +254,8 @@ const displayContests = () => {
   }
   console.log("CONTESTS DISPLAYED AND EQUIPPED WITH EVENT LISTENERS")
 }
+
+
 
 // ############ EVENTS #############
 map.on('loadstart', async function(evt){
