@@ -23,9 +23,6 @@ let contestsAreDisplayed = false;
 let elec_results;
 const LOW_VOTE_COUNT_THRESHOLD = 1000;
 
-// let standardBlue = [0, 125, 237]
-// let standardRed = [227, 51, 61];
-
 let standardBlue = [0, 0, 255];
 let standardRed = [255, 0, 0];
 
@@ -63,12 +60,8 @@ const AZPrecincts = new VectorLayer({
 map.addLayer(AZPrecincts);
 // ################################
 
-
-(function initializeContestName() {
+function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
-})()
-
-function initializeListeners() {
   const select = document.getElementById('visual-select')
   const alphaBtn = document.getElementById('alpha-btn')
 
@@ -76,43 +69,40 @@ function initializeListeners() {
   alphaBtn.addEventListener('click', handleAlphaBtn)
   
 }
-initializeListeners()
+initializeApp()
 
 function setContestName(contest) {
   document.getElementById('contest-name').innerHTML = contest;
+  selectedContest = contest;
 }
 
-const calculateVotingWeight = (contest, isContinuous) => {
+const calculateVotingWeight = (contest) => {
   const {total, candidates} = contest;
   let demVotes, repVotes;
   for (const cand of candidates) {
     if (cand.party == "DEM") demVotes = cand.votes;
     if (cand.party == "REP") repVotes = cand.votes;
   }
-
-  const basic_metric = (((demVotes - repVotes)/total) * 100).toFixed(2);
-  const ranged_metric = (demVotes/total).toFixed(2);
-
-  return isContinuous ? ranged_metric : basic_metric;
+  return (demVotes/total).toFixed(2);
 }
 
-const getQuantizedPartyColor = (weight) => {
+const getQuantizedPartyColor = (dp) => {
   let clr;
 
-  if (weight > 0) {
-    clr = weight >= 22.5 ? partyColors["DEMOCRATIC"]
-      : (weight >= 10 && weight < 22.5) ? partyColors["DEMOCRATIC_BRIGHT"]
+  if (dp > 0.5) {
+    clr = dp >= 0.65 ? partyColors["DEMOCRATIC"]
+      : (dp >= 0.55 && dp < .65) ? partyColors["DEMOCRATIC_BRIGHT"]
       : partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
-  } else if (weight < 0) {
-    clr = weight <= -15 ? partyColors["REPUBLICAN"] 
-      : (weight > -15 && weight <= -10) ? partyColors["REPUBLICAN_BRIGHT"] 
+  } else if (dp < 0.5) {
+    clr = dp <= 0.35 ? partyColors["REPUBLICAN"] 
+      : (dp > 0.35 && dp <= 0.45) ? partyColors["REPUBLICAN_BRIGHT"] 
       : partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
   }
   return clr;
 }
 
-const getContinuousPartyColor = (weight, totalVotes) => {
-   let [r, g, b] = interpolateColor(standardRed, standardBlue, weight) 
+const getContinuousPartyColor = (dp, totalVotes) => {
+   let [r, g, b] = interpolateColor(standardRed, standardBlue, dp) 
    return alphaOn ? `rgba(${r}, ${g}, ${b}, ${getAlphaValue(totalVotes, LOW_VOTE_COUNT_THRESHOLD)})` : `rgb(${r}, ${g}, ${b})`
 }
 
