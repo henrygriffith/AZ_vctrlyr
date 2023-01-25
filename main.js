@@ -2,14 +2,17 @@ import './style.css';
 import Map from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import TileLayer from 'ol/layer/Tile.js';
-import VectorLayer from 'ol/layer/Vector.js'
-import VectorSource from 'ol/source/Vector.js'
+import VectorLayer from 'ol/layer/Vector.js';
+import VectorSource from 'ol/source/Vector.js';
 import View from 'ol/View.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
 import {fromLonLat} from 'ol/proj.js';
-import {Fill, Stroke, Style} from 'ol/style.js'
+import {Fill, Stroke, Style} from 'ol/style.js';
+import Circle from 'ol/geom/Circle.js';
+import Point from 'ol/geom/Point.js';
+import Feature from 'ol/Feature.js'
 
-import {pnameConversionChart, partyColors} from './util'
+import {pnameConversionChart, partyColors} from './util';
 
 // 'npm start' for live server in browser
 let year = 2022;
@@ -18,9 +21,10 @@ let defaultContest = contest_arr[0];
 let selectedContest = defaultContest;
 let contestsAreDisplayed = false;
 let elec_results;
+const LOW_VOTE_COUNT_THRESHOLD = 1000;
 
-// let standardDEMBlue = [0, 125, 237]
-// let standardREPRed = [227, 51, 61];
+// let standardBlue = [0, 125, 237]
+// let standardRed = [227, 51, 61];
 
 let standardBlue = [0, 0, 255];
 let standardRed = [255, 0, 0];
@@ -64,11 +68,15 @@ map.addLayer(AZPrecincts);
   document.getElementById('contest-name').innerHTML = defaultContest;
 })()
 
-function initializeSelectListener() {
+function initializeListeners() {
   const select = document.getElementById('visual-select')
+  const alphaBtn = document.getElementById('alpha-btn')
+
   select.addEventListener('change', handleSelectChange)
+  alphaBtn.addEventListener('click', handleAlphaBtn)
+  
 }
-initializeSelectListener()
+initializeListeners()
 
 function setContestName(contest) {
   document.getElementById('contest-name').innerHTML = contest;
@@ -103,8 +111,9 @@ const getQuantizedPartyColor = (weight) => {
   return clr;
 }
 
-const getContinuousPartyColor = (weight) => {
-  return interpolateColor(standardRed, standardBlue, weight)
+const getContinuousPartyColor = (weight, totalVotes) => {
+   let [r, g, b] = interpolateColor(standardRed, standardBlue, weight) 
+   return alphaOn ? `rgba(${r}, ${g}, ${b}, ${getAlphaValue(totalVotes, LOW_VOTE_COUNT_THRESHOLD)})` : `rgb(${r}, ${g}, ${b})`
 }
 
 // red to blue
@@ -116,10 +125,11 @@ const interpolateColor = (c1, c2, val) => {
   let lerpg = gdem + (grep - gdem) * val;
   let lerpb = bdem + (brep - bdem) * val;
 
-  return `rgb(${lerpr}, ${lerpg}, ${lerpb})`
+  return [lerpr, lerpg, lerpb]
 }
 
 let isContinuous = false;
+let alphaOn = false;
 
 const colorizePrecincts = (contestName) => {
   const precinctSource = AZPrecincts.getSource();
@@ -127,12 +137,12 @@ const colorizePrecincts = (contestName) => {
       precinctSource.getFeatures().forEach((f) => {
         let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
         county = county.toUpperCase();
-        pname = pnameConversionChart[county][year](pname, pnum) 
-
+        pname = pnameConversionChart[county][year](pname, pnum)
+        if (pname == undefined) return;
         let metric, clr;
         try {
           metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName], isContinuous)
-          clr = isContinuous ? getContinuousPartyColor(metric) : getQuantizedPartyColor(metric)
+          clr = isContinuous ? getContinuousPartyColor(metric, elec_results[county][pname]["contests"][contestName].total) : getQuantizedPartyColor(metric)
         } catch(e) {console.error(e)}
 
         f.setStyle(new Style({
@@ -147,14 +157,65 @@ const colorizePrecincts = (contestName) => {
     }
 }
 
+const circlify = () => {
+  const precinctSource = AZPrecincts.getSource();
+    if (precinctSource.getState() === 'ready') {
+      precinctSource.getFeatures().forEach((f) => {
+        const polygon = f.getGeometry().getExtent();
+        const center = ol.extent.getCenter(polygon);
+
+        const pointFeature = new Feature({
+          geometry: new Point(center, 'XY')
+        })
+
+        pointFeature.setStyle(new Style({
+          stroke: new Stroke({
+            color: 'rgb(0, 0, 255)'
+          }),
+          fill: new Fill({
+            fill: 'yellow'
+          })
+        }))
+
+        console.log(pointFeature)
+      f.setStyle(new Style({
+        stroke: new Stroke({
+          color: 'rgba(0, 0, 0, 1)',
+        })
+      }))
+      })
+    }
+}
+
 function handleSelectChange() {
   const val = document.getElementById('visual-select').value;
-  if (val === "CONTINUOUS BASIC") isContinuous = true;
-  else isContinuous = false;
+  if (val === "CONTINUOUS BASIC") {
+    isContinuous = true;
+    colorizePrecincts(selectedContest)
+  }
+  else if (val === "BASIC") {
+    isContinuous = false;
+    colorizePrecincts(selectedContest)
+  }
+  else if (val === "POPULATION DENSITY CIRCLES") {
+    isContinuous = false;
+    circlify();
+  }
+
+  
+}
+
+function handleAlphaBtn() {
+  alphaOn = !alphaOn
 
   colorizePrecincts(selectedContest)
 }
 
+function getAlphaValue(total_votes, threshold, minAlpha = .4, maxAlpha = 1) {
+  if (total_votes >= threshold) return 1
+
+ return minAlpha + (maxAlpha - minAlpha)  * (total_votes / threshold)
+}
 
 const featureOverlay = new VectorLayer({
   source: new VectorSource(),
@@ -190,6 +251,11 @@ const displayFeatureInfo = function (pixel) {
     const prec_obj = getPrecinctVotes(county, pname);
     const curr_contest = selectedContest || defaultContest;
     getAndWriteCandidates(prec_obj, curr_contest);
+
+    const poly = feature.getGeometry().getExtent();
+    const what = ol.extent.getCenter(poly)
+    console.log('center?: ',what)
+
   }
 
   if (feature !== highlight) {
