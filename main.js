@@ -76,13 +76,12 @@ const circles = new VectorLayer({
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
   const select = document.getElementById('visual-select')
-  const mode = select.value;
+  const mode = select.defaultValue;
   const alphaBtn = document.getElementById('alpha-btn')
-  colorizePrecincts(defaultContest, mode, alfing)
+  colorizePrecincts(defaultContest)
 
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
-  
 }
 
 function setContestName(contest) {
@@ -326,7 +325,6 @@ const displayContests = () => {
 
 // ############ EVENTS #############
 
-initializeApp()
 
 map.on('loadstart', async function(evt){
   fetch('./data/er2022.json')
@@ -340,6 +338,10 @@ map.on('loadstart', async function(evt){
       }
   });
 });
+
+map.once('loadend', function(event) {
+  initializeApp();
+})
 
 map.on('pointermove', function (evt) {
   if (evt.dragging) {
