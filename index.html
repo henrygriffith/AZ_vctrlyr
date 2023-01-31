@@ -10,10 +10,14 @@
   </head>
   <body>
     <div id="main-cont">
+      <div id="left-column"></div>
       <div id="map">
         <p id="contest-name"></p>
       </div>
       <div id="info-col">
+        <div id="year-container">
+          <p>2023</p>
+        </div>
         <div id="er-info">
           <span id="prec-info-line">
             <div id="prec-info-line-names">
@@ -25,15 +29,17 @@
           </span>
           <div id="votes-cont"></div>
         </div>
-        <div id="contest-select"></div>
+        <div id="select-contest-text">Select a Contest:</div>
+        <div class="ui divider fitted"></div>
+        <div id="contest-select">
+        </div>
         <div id="visual-select-cont">
-          <p>SELECT COLOR</p>
-          <select id="visual-select">
+          <select id="visual-select" class="ui selection dropdown">
             <option value="BASIC">BASIC</option>
             <option value="CONTINUOUS BASIC">CONTINUOUS BASIC</option>
             <option value="POPULATION DENSITY CIRCLES">POPULATION DENSITY CIRCLES</option>
           </select>
-           <button id="alpha-btn" class="ui inverted button">ALPHA</button>
+           <button id="alpha-btn" class="ui button">ALPHA</button>
         </div>
         
       </div>

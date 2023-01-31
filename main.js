@@ -277,7 +277,7 @@ const getAndWriteCandidates = (prec_obj, contest) => {
   if (votes_box.hasChildNodes()) votes_box.innerHTML = ''
   const curr_contest = prec_obj["contests"][contest] || {}
   const tot_votes_ele = document.getElementById("tot-votes");
-  tot_votes_ele.innerHTML = curr_contest["total"]
+  tot_votes_ele.innerHTML = curr_contest["total"] + ' votes'
 
   curr_contest.candidates?.forEach((cand) => {
     const candLine = document.createElement("span")
@@ -304,7 +304,7 @@ const displayContests = () => {
 
   const contestContainer = document.getElementById('contest-select')
   for (const cont_name of contest_arr) {
-    const contest = document.createElement('span')
+    const contest = document.createElement('div')
     contest.innerHTML = cont_name;
     contest.setAttribute('class', 'contest');
 
