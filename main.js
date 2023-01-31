@@ -12,7 +12,7 @@ import Circle from 'ol/geom/Circle.js';
 import Point from 'ol/geom/Point.js';
 import Feature from 'ol/Feature.js'
 
-import {pnameConversionChart, partyColors} from './util';
+import {pnameConversionChart} from './util';
 
 // 'npm start' for live server in browser
 let year = 2022;
@@ -99,17 +99,17 @@ const calculateVotingWeight = (contest) => {
   return (demVotes/total).toFixed(2);
 }
 
-const getQuantizedPartyColor = (dp) => {
+const getQuantizedPartyColor = (dp, totalVotes, alphaIsOn) => {
   let clr;
-
+  let alf = alphaIsOn ? getAlphaValue(totalVotes, LOW_VOTE_COUNT_THRESHOLD) : 1
   if (dp > 0.5) {
-    clr = dp >= 0.65 ? partyColors["DEMOCRATIC"]
-      : (dp >= 0.55 && dp < .65) ? partyColors["DEMOCRATIC_BRIGHT"]
-      : partyColors["DEMOCRATIC_BRIGHT_NEUTRAL"]
+    clr = dp >= 0.65 ? `rgba(0, 125, 237, ${alf})`
+      : (dp >= 0.55 && dp < .65) ? `rgba(99, 178, 255, ${alf})`
+      : `rgba(174, 188, 208, ${alf})`
   } else if (dp < 0.5) {
-    clr = dp <= 0.35 ? partyColors["REPUBLICAN"] 
-      : (dp > 0.35 && dp <= 0.45) ? partyColors["REPUBLICAN_BRIGHT"] 
-      : partyColors["REPUBLICAN_BRIGHT_NEUTRAL"]
+    clr = dp <= 0.35 ? `rgba(227, 51, 61, ${alf})`
+      : (dp > 0.35 && dp <= 0.45) ? `rgba(204, 167, 163, ${alf})` 
+      : `rgba(255, 115, 112, ${alf})`
   }
   return clr;
 }
@@ -143,7 +143,7 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
         try {
           metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName])
           clr = requestedType === "BASIC" 
-            ? getQuantizedPartyColor(metric)
+            ? getQuantizedPartyColor(metric, elec_results[county][pname]["contests"][contestName].total, alphaIsOn)
             : getContinuousPartyColor(metric, elec_results[county][pname]["contests"][contestName].total, alphaIsOn)
         } catch(e) {console.error(e)}
 
@@ -172,7 +172,6 @@ const circlify = (contestName) => {
         try {
           const dem = elec_results[county][pname]["contests"][contestName].candidates.find((cand) => cand.party == "DEM")
           if (Number(dem.votes) >= 1500) radius = 2500
-          console.log(dem)
       
         } catch(e) {console.error(e)}
 
