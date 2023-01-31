@@ -5,7 +5,7 @@ html, body {
   height: 100%;
   /* background-color: black; */
   font-family: sans-serif;
-  font-weight: 400
+  font-weight: 400;
 }
 
 #main-cont {
@@ -145,6 +145,8 @@ html, body {
 }
 
 #visual-select-cont {
+  display: flex;
+  flex-direction: column;
   padding-left: 2rem;
   flex: 3;
   color: white;
@@ -152,6 +154,18 @@ html, body {
 
 #visual-select {
   font-weight: 800;
+  width: 65%;
+  margin-bottom: 1em;
+}
+
+#visual-btn-menu {
+  display: flex;
+  width: 65%;
+  flex-flow: row wrap;
+  justify-content: flex-start;
+}
+#visual-btn-menu > button {
+  margin: 0 0.25em;
 }
 
 

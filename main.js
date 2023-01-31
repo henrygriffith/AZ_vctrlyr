@@ -79,9 +79,11 @@ function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
   const select = document.getElementById('visual-select')
   const alphaBtn = document.getElementById('alpha-btn')
+  const circlesBtn = document.getElementById('circles-btn')
 
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
+  circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
 
@@ -221,6 +223,11 @@ function handleAlphaBtn() {
   colorizePrecincts(selectedContest, colorMode, alfing)
 }
 
+function handleCirclesButton() {
+  circling = !circling
+  circlify(selectedContest)
+}
+
 function getAlphaValue(total_votes, threshold, minAlpha = .4, maxAlpha = 1) {
   if (total_votes >= threshold) return 1
 
@@ -284,8 +291,7 @@ document.addEventListener('keypress', function (e) {
     colorizePrecincts(selectedContest, selectedColorMode, alfing = !alfing);
   }
   if (e.key === "c") {
-    circling = !circling
-    circlify(selectedContest)
+    handleCirclesButton()
   }
 })
 
