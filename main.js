@@ -19,8 +19,10 @@ let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
 let defaultContest = contest_arr[0];
 let selectedContest = defaultContest;
+let selectedColorMode = "BASIC"
 let contestsAreDisplayed = false;
 let alfing = false;
+let circling = false;
 let elec_results;
 const LOW_VOTE_COUNT_THRESHOLD = 1000;
 
@@ -58,13 +60,13 @@ const AZPrecincts = new VectorLayer({
 });
 
 
-const circles = new VectorLayer({
+let circles = new VectorLayer({
   source: new VectorSource(),
   map: map,
   style: new Style({
     stroke: new Stroke({
       color: 'rgba(0, 255, 0, 1)',
-      width: 2
+      width: 1
     }),
     fill: new Fill({
       color: 'rgba(0, 255, 255, .75)',
@@ -76,12 +78,13 @@ const circles = new VectorLayer({
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
   const select = document.getElementById('visual-select')
-  const mode = select.defaultValue;
   const alphaBtn = document.getElementById('alpha-btn')
-  colorizePrecincts(defaultContest)
 
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
+
+  colorizePrecincts(defaultContest)
+
 }
 
 function setContestName(contest) {
@@ -160,47 +163,53 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
 }
 
 const circlify = (contestName) => {
+  
   const precinctSource = AZPrecincts.getSource();
   const circlesSource = circles.getSource();
-    if (precinctSource.getState() === 'ready') {
-      precinctSource.getFeatures().forEach((f) => {
-        let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
-        county = county.toUpperCase();
-        pname = pnameConversionChart[county][year](pname, pnum)
-        if (pname == undefined) return;
-        let radius = 750;
-        try {
-          const dem = elec_results[county][pname]["contests"][contestName].candidates.find((cand) => cand.party == "DEM")
-          if (Number(dem.votes) >= 1500) radius = 2500
-      
-        } catch(e) {console.error(e)}
 
-        const polygon = f.getGeometry().getExtent();
-        const center = ol.extent.getCenter(polygon);
+  if (!circling) {
+    circlesSource.clear();
+    return;
+  }
 
-        const circleFeature = new Feature({
-          geometry: new Circle(center, radius, 'XY')
-        })
-
-        circleFeature.setStyle(new Style({
-          stroke: new Stroke({
-            coor: 'rgb(0, 0, 0)'
-          }),
-          fill: new Fill({
-            color: 'rgba(173, 216, 230, 0.75)'
-          })
-        }))
-        circlesSource.addFeature(circleFeature)
-
-      })
-    }
-    console.log(circlesSource)
+  if (precinctSource.getState() === 'ready') {
+    precinctSource.getFeatures().forEach((f) => {
+      let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
+      county = county.toUpperCase();
+      pname = pnameConversionChart[county][year](pname, pnum)
+      if (pname == undefined) return;
+      let radius = 750;
+      try {
+        const dem = elec_results[county][pname]["contests"][contestName].candidates.find((cand) => cand.party == "DEM")
+        if (Number(dem.votes) >= 1500) radius = 2500
     
+      } catch(e) {console.error(e)}
+
+      const polygon = f.getGeometry().getExtent();
+      const center = ol.extent.getCenter(polygon);
+
+      const circleFeature = new Feature({
+        geometry: new Circle(center, radius, 'XY')
+      })
+
+      circleFeature.setStyle(new Style({
+        stroke: new Stroke({
+          coor: 'rgb(0, 0, 0)'
+        }),
+        fill: new Fill({
+          color: 'rgba(173, 216, 230, 0.75)'
+        })
+      }))
+      circlesSource.addFeature(circleFeature)
+
+    })
+  }
 }
 
 function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
-  
+  selectedColorMode = colorMode;
+
   if (colorMode === "POPULATION DENSITY CIRCLES") circlify(selectedContest);
   else colorizePrecincts(selectedContest, colorMode, false);
 }
@@ -270,6 +279,16 @@ const getPrecinctVotes = (county, pname) => {
   return elec_results[county][pname]
 };
 
+document.addEventListener('keypress', function (e) {
+  if (e.key === "a") {
+    colorizePrecincts(selectedContest, selectedColorMode, alfing = !alfing);
+  }
+  if (e.key === "c") {
+    circling = !circling
+    circlify(selectedContest)
+  }
+})
+
 const getAndWriteCandidates = (prec_obj, contest) => {
   const votes_box = document.getElementById('votes-cont')
   if (votes_box.hasChildNodes()) votes_box.innerHTML = ''
@@ -319,12 +338,7 @@ const displayContests = () => {
   console.log("CONTESTS DISPLAYED AND EQUIPPED WITH EVENT LISTENERS")
 }
 
-
-
-
 // ############ EVENTS #############
-
-
 map.on('loadstart', async function(evt){
   fetch('./data/er2022.json')
     .then((response) => response.json())
@@ -338,7 +352,7 @@ map.on('loadstart', async function(evt){
   });
 });
 
-map.once('loadend', function(event) {
+map.once('loadend', function(evt) {
   initializeApp();
 })
 
