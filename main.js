@@ -9,7 +9,6 @@ import GeoJSON from 'ol/format/GeoJSON.js';
 import {fromLonLat} from 'ol/proj.js';
 import {Fill, Stroke, Style} from 'ol/style.js';
 import Circle from 'ol/geom/Circle.js';
-import Point from 'ol/geom/Point.js';
 import Feature from 'ol/Feature.js'
 
 import {pnameConversionChart} from './util';
@@ -17,17 +16,23 @@ import {pnameConversionChart} from './util';
 // 'npm start' for live server in browser
 let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
+const LOW_VOTE_COUNT_THRESHOLD = 1000;
+
+let standardBlue = [0, 0, 255];
+let standardRed = [255, 0, 0];
+
 let defaultContest = contest_arr[0];
 let selectedContest = defaultContest;
 let selectedColorMode = "BASIC"
 let contestsAreDisplayed = false;
 let alfing = false;
 let circling = false;
-let elec_results;
-const LOW_VOTE_COUNT_THRESHOLD = 1000;
 
-let standardBlue = [0, 0, 255];
-let standardRed = [255, 0, 0];
+let elec_results;
+let highlight;
+
+
+
 
 
 // ############# LAYERS ##############
@@ -245,8 +250,6 @@ const featureOverlay = new VectorLayer({
   }),
 })
 
-
-let highlight;
 const displayFeatureInfo = function (pixel) {
   const feature = map.forEachFeatureAtPixel(pixel, function (feature) {
     return feature;
@@ -285,15 +288,6 @@ const displayFeatureInfo = function (pixel) {
 const getPrecinctVotes = (county, pname) => {
   return elec_results[county][pname]
 };
-
-document.addEventListener('keypress', function (e) {
-  if (e.key === "a") {
-    colorizePrecincts(selectedContest, selectedColorMode, alfing = !alfing);
-  }
-  if (e.key === "c") {
-    handleCirclesButton()
-  }
-})
 
 const getAndWriteCandidates = (prec_obj, contest) => {
   const votes_box = document.getElementById('votes-cont')
@@ -374,3 +368,13 @@ map.on('pointermove', function (evt) {
 map.on('click', function (evt) {
   displayFeatureInfo(evt.pixel);
 })
+
+document.addEventListener('keypress', function (e) {
+  if (e.key === "a") {
+    colorizePrecincts(selectedContest, selectedColorMode, alfing = !alfing);
+  }
+  if (e.key === "c") {
+    handleCirclesButton()
+  }
+})
+// ##############################
