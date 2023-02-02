@@ -56,6 +56,8 @@ html, body {
   font-size: 1.5em;
   font-weight: 800;
   color: lightgray;
+  text-decoration: underline;
+  text-decoration-color: white;
 }
 
 #er-info {

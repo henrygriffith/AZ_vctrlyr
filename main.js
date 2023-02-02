@@ -6,7 +6,7 @@ import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import View from 'ol/View.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import {fromLonLat} from 'ol/proj.js';
+import {fromLonLat, get} from 'ol/proj.js';
 import {Fill, Stroke, Style} from 'ol/style.js';
 import Circle from 'ol/geom/Circle.js';
 import Feature from 'ol/Feature.js'
@@ -99,14 +99,24 @@ function setContestName(contest) {
   selectedContest = contest;
 }
 
-const calculateVotingWeight = (contest) => {
+const getDemPercentage = (contest) => {
   const {total, candidates} = contest;
-  let demVotes, repVotes;
-  for (const cand of candidates) {
-    if (cand.party == "DEM") demVotes = cand.votes;
-    if (cand.party == "REP") repVotes = cand.votes;
-  }
+  let demVotes = 0
+  for (const cand of candidates) 
+    if (cand.party == "DEM") demVotes += cand.votes
+
   return (demVotes/total).toFixed(2);
+}
+
+const getOverallPartyPercentage = (contests, contestName, party) => {
+  const { candidates } = contests[contestName]
+  const contestTotal = elec_results.OVERALL[contestName][party]
+  let partyVotes = 0;
+
+  for (const cand of candidates)
+    if (cand.party === party) partyVotes += Number(cand.votes)
+  console.log((partyVotes / contestTotal).toFixed())
+  return (partyVotes / contestTotal).toFixed();
 }
 
 const getQuantizedPartyColor = (dp, totalVotes, alphaIsOn) => {
@@ -148,13 +158,32 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
         let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
         county = county.toUpperCase();
         pname = pnameConversionChart[county][year](pname, pnum)
+
+        // if we can't find pname, iterate.
         if (pname == undefined) return;
+
         let metric, clr;
+        
+        const forks = {
+          "metrics": {
+            "BASIC": (contests, contestName) => getDemPercentage(contests[contestName]),
+            "CONTINUOUS BASIC": (contests, contestName) => getDemPercentage(contests[contestName]),
+            "DEM DISTRIBUTION": (contests, contestName) => getOverallPartyPercentage(contests, contestName, "DEM"),
+            "REP DISTRIBUTION": (contests, contestName) => getOverallPartyPercentage(contests, contestName, "REP"),
+            "LBT DISTRIBUTION": (contests, contestName) => getOverallPartyPercentage(contests, contestName, "LBT"),
+          },
+          "colors": {
+            "BASIC": (metric, total) => getQuantizedPartyColor(metric, total, alphaIsOn),
+            "CONTINUOUS BASIC": (metric, total) => getContinuousPartyColor(metric, total, alphaIsOn),
+            "DEM DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
+            "REP DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
+            "LBT DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
+          }
+        }
         try {
-          metric = calculateVotingWeight(elec_results[county][pname]["contests"][contestName])
-          clr = requestedType === "BASIC" 
-            ? getQuantizedPartyColor(metric, elec_results[county][pname]["contests"][contestName].total, alphaIsOn)
-            : getContinuousPartyColor(metric, elec_results[county][pname]["contests"][contestName].total, alphaIsOn)
+          const precinctContests = elec_results[county][pname]["contests"]
+          metric = forks["metrics"][requestedType](precinctContests, contestName)
+          clr = forks["colors"][requestedType](metric, precinctContests[contestName].total)
         } catch(e) {console.error(e)}
 
         f.setStyle(new Style({
@@ -170,7 +199,6 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
 }
 
 const circlify = (contestName) => {
-  
   const precinctSource = AZPrecincts.getSource();
   const circlesSource = circles.getSource();
 
@@ -208,7 +236,6 @@ const circlify = (contestName) => {
         })
       }))
       circlesSource.addFeature(circleFeature)
-
     })
   }
 }

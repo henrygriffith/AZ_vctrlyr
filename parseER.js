@@ -52,7 +52,11 @@ const getRowsFromCSV = () => {
 export const makeContsByPrec = async () => {
   const er = await getRowsFromCSV();
   let prec_map = {};
+  let contest_totals = {};
   let relevant_contests = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"];
+
+  relevant_contests.forEach((cont) => contest_totals[cont] = { "DEM": 0, "REP": 0, "LBT": 0})
+
   er.forEach((r) => {
     if (!relevant_contests.includes(r["CONTEST_FULL_NAME"])) return;
     const {
@@ -81,7 +85,10 @@ export const makeContsByPrec = async () => {
       };
     }
     contests[cntnm].candidates.push({ name: cndnm, party, votes });
+
+    contest_totals[cntnm][party] += Number(votes)
   });
+  prec_map.OVERALL = contest_totals
   return prec_map
 };
 
