@@ -52,6 +52,10 @@ export const pnameConversionChart = {
     REPUBLICAN_NEUTRAL: 'rgb(153, 112, 110)',
     REPUBLICAN_DARK: 'rgb(102, 0, 0)',
     REPUBLICAN_DARK_NEUTRAL: 'rgb(49, 29, 25)',
+
+    LIBERTARIAN: 'rgb(247, 212, 71)',
+    LIBERTARIAN_BRIGHT: 'rgb(255, 251, 154)',
+    LIBERTARIAN_BRIGHT_NEUTRAL: 'rgb(255, 255, 231)'
   }
 
   // export const politicalWeight = {

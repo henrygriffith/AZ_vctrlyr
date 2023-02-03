@@ -6,7 +6,7 @@ import VectorLayer from 'ol/layer/Vector.js';
 import VectorSource from 'ol/source/Vector.js';
 import View from 'ol/View.js';
 import GeoJSON from 'ol/format/GeoJSON.js';
-import {fromLonLat, get} from 'ol/proj.js';
+import {fromLonLat} from 'ol/proj.js';
 import {Fill, Stroke, Style} from 'ol/style.js';
 import Circle from 'ol/geom/Circle.js';
 import Feature from 'ol/Feature.js'
@@ -17,9 +17,16 @@ import {pnameConversionChart} from './util';
 let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
 const LOW_VOTE_COUNT_THRESHOLD = 1000;
+const PARTY_VOTE_DISTRIB_UPPER = 0.4;
 
 let standardBlue = [0, 0, 255];
 let standardRed = [255, 0, 0];
+let DEMOCRATIC_RGB = [0, 125, 237];
+let DEMOCRATIC_NEUTRAL_RGB = [174, 188, 208]
+let REPUBLICAN_RGB = [227, 51, 61, 1]
+let REPUBLICAN_NEUTRAL_RGB = [255, 115, 112]
+let LIBERTARIAN_RGB = [247, 212, 71]
+let LIBERTARIAN_NEUTRAL_RGB = [255, 255, 231]
 
 let defaultContest = contest_arr[0];
 let selectedContest = defaultContest;
@@ -30,7 +37,6 @@ let circling = false;
 
 let elec_results;
 let highlight;
-
 
 
 
@@ -91,7 +97,6 @@ function initializeApp() {
   circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
-
 }
 
 function setContestName(contest) {
@@ -115,8 +120,9 @@ const getOverallPartyPercentage = (contests, contestName, party) => {
 
   for (const cand of candidates)
     if (cand.party === party) partyVotes += Number(cand.votes)
-  console.log((partyVotes / contestTotal).toFixed())
-  return (partyVotes / contestTotal).toFixed();
+
+  const ratioOfTotal = ((partyVotes / contestTotal) * 100).toFixed(10)
+  return ratioOfTotal
 }
 
 const getQuantizedPartyColor = (dp, totalVotes, alphaIsOn) => {
@@ -137,6 +143,20 @@ const getQuantizedPartyColor = (dp, totalVotes, alphaIsOn) => {
 const getContinuousPartyColor = (dp, totalVotes, alpha) => {
    let [r, g, b] = interpolateColor(standardRed, standardBlue, dp) 
    return alpha ? `rgba(${r}, ${g}, ${b}, ${getAlphaValue(totalVotes, LOW_VOTE_COUNT_THRESHOLD)})` : `rgb(${r}, ${g}, ${b})`
+}
+
+const getColorForSpecificPartyDistrib = (party, val, upperRange) => {
+  let r, g, b;
+  if (party == "DEM")
+    [r, g, b] = interpolateColor(DEMOCRATIC_NEUTRAL_RGB, DEMOCRATIC_RGB, val/upperRange)
+  else if (party == "REP")
+    [r, g, b] = interpolateColor(REPUBLICAN_NEUTRAL_RGB, REPUBLICAN_RGB, val/upperRange)
+  else if (party == "LBT")
+    [r, g, b] = interpolateColor(LIBERTARIAN_NEUTRAL_RGB, LIBERTARIAN_RGB, val/upperRange)
+
+
+  console.log(r, g, b)
+   return `rgba(${r}, ${g}, ${b}, 1)`
 }
 
 // red to blue
@@ -175,9 +195,10 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
           "colors": {
             "BASIC": (metric, total) => getQuantizedPartyColor(metric, total, alphaIsOn),
             "CONTINUOUS BASIC": (metric, total) => getContinuousPartyColor(metric, total, alphaIsOn),
-            "DEM DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
-            "REP DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
-            "LBT DISTRIBUTION": (metric) => getColorForSpecificPartyDist(metric),
+            // here needs
+            "DEM DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
+            "REP DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
+            "LBT DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
           }
         }
         try {
@@ -244,8 +265,7 @@ function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
   selectedColorMode = colorMode;
 
-  if (colorMode === "POPULATION DENSITY CIRCLES") circlify(selectedContest);
-  else colorizePrecincts(selectedContest, colorMode, false);
+  colorizePrecincts(selectedContest, colorMode, false);
 }
 
 function handleAlphaBtn() {
