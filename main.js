@@ -1,4 +1,4 @@
-import './style.css';
+// import '/style.css';
 import Map from 'ol/Map.js';
 import OSM from 'ol/source/OSM.js';
 import TileLayer from 'ol/layer/Tile.js';
@@ -11,7 +11,7 @@ import {Fill, Stroke, Style} from 'ol/style.js';
 import Circle from 'ol/geom/Circle.js';
 import Feature from 'ol/Feature.js'
 
-import {pnameConversionChart} from './util';
+import {pnameConversionChart} from './util.js';
 
 // 'npm start' for live server in browser
 let year = 2022;
@@ -37,7 +37,7 @@ let circling = false;
 
 let elec_results;
 let highlight;
-
+let vanids;
 
 
 
@@ -81,7 +81,7 @@ let circles = new VectorLayer({
     }),
     fill: new Fill({
       color: 'rgba(0, 255, 255, .75)',
-    })
+    }),
   })
 })
 // ################################
@@ -97,6 +97,11 @@ function initializeApp() {
   circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
+  fetch("http://localhost:8000/conthist/vanids").then((res) => res.json()).then((data) => {
+    vanids = data;
+    console.log(vanids)
+    console.log(data)
+  })
 }
 
 function setContestName(contest) {

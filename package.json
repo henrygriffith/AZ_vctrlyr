@@ -2,7 +2,9 @@
   "type": "module",
   "name": "my-app",
   "version": "1.0.0",
+  "typings": "dist/*.d.ts",
   "scripts": {
+    "express": "node ./server/server.cjs",
     "start": "vite",
     "build": "vite build",
     "serve": "vite preview"
@@ -11,10 +13,15 @@
     "vite": "^3.0.9"
   },
   "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
     "fast-csv": "^4.3.6",
     "fs": "^0.0.1-security",
+    "http": "^0.0.1-security",
     "ol": "^7.2.2",
     "path": "^0.12.7",
+    "sqlite": "^4.1.2",
+    "sqlite3": "^5.1.4",
     "url": "^0.11.0"
   }
 }
