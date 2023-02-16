@@ -37,8 +37,7 @@ let circling = false;
 
 let elec_results;
 let highlight;
-let vanids;
-
+let universe = {}
 
 
 // ############# LAYERS ##############
@@ -97,11 +96,53 @@ function initializeApp() {
   circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
-  fetch("http://localhost:8000/conthist/vanids").then((res) => res.json()).then((data) => {
-    vanids = data;
-    console.log(vanids)
-    console.log(data)
+
+  // fetch("http://localhost:8000/conthist").then((res) => res.json()).then((reqd) => {
+  //   console.log("conthist: ", reqd.data[0])
+  // })
+  // fetch("http://localhost:8000/repvoters").then((res) => res.json()).then((reqd) => {
+  //   console.log("repvoters: ", reqd.data[0])
+  // })
+  // fetch("http://localhost:8000/survresp").then((res) => res.json()).then((reqd) => {
+  //   console.log("survresp: ", reqd.data[0])
+  // })
+  fetch("http://localhost:8000/univoters").then((res) => res.json()).then((reqd) => {
+    console.log("ok...request came back now...")
+    console.log("starting siphon: ")
+    siphonUniverseDetails(reqd.data)
+    console.log("done siphoning universe!")
+    console.log("....aaaaaand here it is: ")
+    console.log(universe)
   })
+}
+
+function siphonUniverseDetails(dataset) {
+  dataset.forEach((row) => {
+    const {precinct: prec, race: rc, vci, con_dist: CD, hse_dist: LD } = row
+    if (!universe.hasOwnProperty(prec)) {
+      universe[prec] = {
+        name: prec,
+        num_ppl: 1,
+        races: {
+          "Hispanic": 0,
+          "Caucasian": 0,
+          "Asian": 0,
+          "African American": 0,
+          "Native American": 0,
+          "Other": 0,
+        },
+        avg_vci: vci,
+        CD,
+        LD,
+      }
+      universe[prec]["races"][rc] += 1
+    } else {
+      universe[prec]["num_ppl"] += 1
+      universe[prec]["avg_vci"] += Number(vci)
+      universe[prec]["races"][rc] += 1
+    }
+  })
+  for (const prec in universe) universe[prec]["avg_vci"] /= universe[prec]["num_ppl"]
 }
 
 function setContestName(contest) {
