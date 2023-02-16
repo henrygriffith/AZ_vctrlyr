@@ -33,6 +33,18 @@ html, body {
   color: black;
 }
 
+#prec-modal {
+  position: absolute;
+  left: 4vw;
+  top: 6em;
+  z-index: 1;
+  font-size: 1em;
+  color: black;
+  background-color: white;
+  width: 15vw;
+  height: 27.5vh;
+}
+
 #info-col {
   width: 33.5vw;
   display: flex;

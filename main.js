@@ -96,16 +96,6 @@ function initializeApp() {
   circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
-
-  // fetch("http://localhost:8000/conthist").then((res) => res.json()).then((reqd) => {
-  //   console.log("conthist: ", reqd.data[0])
-  // })
-  // fetch("http://localhost:8000/repvoters").then((res) => res.json()).then((reqd) => {
-  //   console.log("repvoters: ", reqd.data[0])
-  // })
-  // fetch("http://localhost:8000/survresp").then((res) => res.json()).then((reqd) => {
-  //   console.log("survresp: ", reqd.data[0])
-  // })
   fetch("http://localhost:8000/univoters").then((res) => res.json()).then((reqd) => {
     console.log("ok...request came back now...")
     console.log("starting siphon: ")
@@ -142,7 +132,10 @@ function siphonUniverseDetails(dataset) {
       universe[prec]["races"][rc] += 1
     }
   })
-  for (const prec in universe) universe[prec]["avg_vci"] /= universe[prec]["num_ppl"]
+  for (const prec in universe) 
+    universe[prec]["avg_vci"] = (universe[prec]["avg_vci"] / universe[prec]["num_ppl"]).toFixed(2)
+
+  applyOnClickListeners();
 }
 
 function setContestName(contest) {
@@ -307,6 +300,9 @@ const circlify = (contestName) => {
   }
 }
 
+function displayPrecinctDetailModal(pname) {
+}
+
 function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
   selectedColorMode = colorMode;
@@ -449,6 +445,15 @@ map.once('loadend', function(evt) {
   initializeApp();
 })
 
+map.on('click', function(event) {
+  // event.stopPropagation();
+  map.forEachFeatureAtPixel(event.pixel, function(feature) {
+    let {County: county, pct_num: pnum, pct_name: pname} = feature.values_;
+    pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
+    displayPrecinctDetailModal(pname)
+  })
+})
+
 map.on('pointermove', function (evt) {
   if (evt.dragging) {
     return;
@@ -456,10 +461,6 @@ map.on('pointermove', function (evt) {
   const pixel = map.getEventPixel(evt.originalEvent);
   displayFeatureInfo(pixel);
   
-})
-
-map.on('click', function (evt) {
-  displayFeatureInfo(evt.pixel);
 })
 
 document.addEventListener('keypress', function (e) {
