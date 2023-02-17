@@ -19,8 +19,8 @@ let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
 const LOW_VOTE_COUNT_THRESHOLD = 1000;
 const PARTY_VOTE_DISTRIB_UPPER = 0.4;
 
-let standardBlue = [0, 0, 255];
-let standardRed = [255, 0, 0];
+let STANDARD_BLUE = [0, 0, 255];
+let STANDARD_RED = [255, 0, 0];
 let DEMOCRATIC_RGB = [0, 125, 237];
 let DEMOCRATIC_NEUTRAL_RGB = [174, 188, 208]
 let REPUBLICAN_RGB = [227, 51, 61, 1]
@@ -35,9 +35,10 @@ let contestsAreDisplayed = false;
 let alfing = false;
 let circling = false;
 
+let electioning = true;
 let elec_results;
-let highlight;
 let universe = {}
+let highlight;
 
 
 // ############# LAYERS ##############
@@ -90,10 +91,12 @@ function initializeApp() {
   const select = document.getElementById('visual-select')
   const alphaBtn = document.getElementById('alpha-btn')
   const circlesBtn = document.getElementById('circles-btn')
+  const univSelect = document.getElementById('univ-select')
 
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
   circlesBtn.addEventListener('click', handleCirclesButton)
+  univSelect.addEventListener('change', handleUniverseSelectChange)
 
   colorizePrecincts(defaultContest)
   fetch("http://localhost:8000/univoters").then((res) => res.json()).then((reqd) => {
@@ -108,7 +111,8 @@ function initializeApp() {
 
 function siphonUniverseDetails(dataset) {
   dataset.forEach((row) => {
-    const {precinct: prec, race: rc, vci, con_dist: CD, hse_dist: LD } = row
+    let {precinct: prec, race: rc, vci, con_dist: CD, hse_dist: LD, county } = row
+    prec = pnameConversionChart[county.toUpperCase()][year](prec)
     if (!universe.hasOwnProperty(prec)) {
       universe[prec] = {
         name: prec,
@@ -135,7 +139,7 @@ function siphonUniverseDetails(dataset) {
   for (const prec in universe) 
     universe[prec]["avg_vci"] = (universe[prec]["avg_vci"] / universe[prec]["num_ppl"]).toFixed(2)
 
-  applyOnClickListeners();
+  // applyOnClickListeners();
 }
 
 function setContestName(contest) {
@@ -180,7 +184,7 @@ const getQuantizedPartyColor = (dp, totalVotes, alphaIsOn) => {
 }
 
 const getContinuousPartyColor = (dp, totalVotes, alpha) => {
-   let [r, g, b] = interpolateColor(standardRed, standardBlue, dp) 
+   let [r, g, b] = interpolateColor(STANDARD_RED, STANDARD_BLUE, dp) 
    return alpha ? `rgba(${r}, ${g}, ${b}, ${getAlphaValue(totalVotes, LOW_VOTE_COUNT_THRESHOLD)})` : `rgb(${r}, ${g}, ${b})`
 }
 
@@ -196,6 +200,10 @@ const getColorForSpecificPartyDistrib = (party, val, upperRange) => {
 
   console.log(r, g, b)
    return `rgba(${r}, ${g}, ${b}, 1)`
+}
+
+const getHowGreen = (pocPerc) => {
+  return interpolateColor([255, 255, 255], [0, 100, 0], pocPerc)
 }
 
 // red to blue
@@ -220,7 +228,6 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
 
         // if we can't find pname, iterate.
         if (pname == undefined) return;
-
         let metric, clr;
         
         const forks = {
@@ -234,7 +241,6 @@ const colorizePrecincts = (contestName, requestedType = "BASIC", alphaIsOn = fal
           "colors": {
             "BASIC": (metric, total) => getQuantizedPartyColor(metric, total, alphaIsOn),
             "CONTINUOUS BASIC": (metric, total) => getContinuousPartyColor(metric, total, alphaIsOn),
-            // here needs
             "DEM DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
             "REP DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
             "LBT DISTRIBUTION": (metric, total) => getColorForSpecificPartyDistrib(requestedType.split(' ')[0], metric, PARTY_VOTE_DISTRIB_UPPER),
@@ -310,6 +316,15 @@ function handleSelectChange() {
   colorizePrecincts(selectedContest, colorMode, false);
 }
 
+// currently needs to wait for fetch
+function handleUniverseSelectChange() {
+  const colorMode = document.getElementById('univ-select').value;
+  console.log(colorMode)
+  engageThrusters(colorMode)
+
+  //maybe a zoom in?
+}
+
 function handleAlphaBtn() {
   const colorMode = document.getElementById('visual-select').value;
   alfing = !alfing
@@ -377,6 +392,47 @@ const displayFeatureInfo = function (pixel) {
 const getPrecinctVotes = (county, pname) => {
   return elec_results[county][pname]
 };
+
+const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
+  const forks = {
+    "metrics": {
+      "PEOPLE OF COLOR": (precObj) => findPercentagePOC(precObj)
+    },
+    "colors": {
+      "PEOPLE OF COLOR": (metric) => getHowGreen(metric)
+    }
+  }
+
+  const precinctSource = AZPrecincts.getSource();
+    if (precinctSource.getState() === 'ready') {
+      precinctSource.getFeatures().forEach((f) => {
+        let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
+        pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
+        console.log(pname)
+        let precObj = universe[pname] || {}
+        // console.log(precObj)
+        let metric, clr
+
+        try {
+          console.log("type: ", requestedType)
+          console.log("precObj: ", precObj)
+          metric = forks["metrics"][requestedType](precObj)
+          clr = forks["colors"][requestedType](metric)
+        } catch(err) { }
+
+        f.setStyle(new Style({
+          fill: new Fill({
+            color: clr
+          }),
+          stroke: new Stroke({
+            color: 'rgba(255, 255, 255, 1)',
+          })
+        }))
+      })
+    }
+}
+
+const findPercentagePOC = (precObj) => 1 - (precObj.races["Caucasian"] / precObj.num_ppl)
 
 const getAndWriteCandidates = (prec_obj, contest) => {
   const votes_box = document.getElementById('votes-cont')

@@ -166,7 +166,7 @@ html, body {
   color: white;
 }
 
-#visual-select {
+#visual-select, #univ-select {
   font-weight: 800;
   width: 65%;
   margin-bottom: 1em;
