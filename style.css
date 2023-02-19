@@ -8,6 +8,10 @@ html, body {
   font-weight: 400;
 }
 
+.flex-row {
+  display: flex;
+}
+
 #main-cont {
   display: flex;
   width: 100vw;
@@ -43,6 +47,10 @@ html, body {
   background-color: white;
   width: 15vw;
   height: 27.5vh;
+}
+
+#modal-pname {
+
 }
 
 #info-col {

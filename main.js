@@ -307,7 +307,14 @@ const circlify = (contestName) => {
 }
 
 function displayPrecinctDetailModal(pname) {
+  const precObj = universe[pname]
+  if (precObj) setHTMLforModal(precObj)
 }
+
+function setHTMLforModal(precObj) {
+  const { name, num_ppl, avg_vci, races, CD, LD } = precObj
+  
+} 
 
 function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
