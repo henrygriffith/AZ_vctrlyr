@@ -47,6 +47,7 @@ html, body {
   background-color: white;
   width: 15vw;
   height: 27.5vh;
+  display: none;
 }
 
 #modal-pname {

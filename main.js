@@ -308,12 +308,22 @@ const circlify = (contestName) => {
 
 function displayPrecinctDetailModal(pname) {
   const precObj = universe[pname]
-  if (precObj) setHTMLforModal(precObj)
+  const modal = document.getElementById("prec-modal")
+  if (precObj) {
+    console.log('setting to block')
+    modal.style.display = 'block';
+    setHTMLforModal(precObj)
+  } 
 }
 
 function setHTMLforModal(precObj) {
   const { name, num_ppl, avg_vci, races, CD, LD } = precObj
-  
+
+  document.getElementById('udata_pname').textContent = name
+  document.getElementById('udata_cd').textContent = "CD: " + CD
+  document.getElementById('udata_ld').textContent = "LD: " + LD
+  document.getElementById('udata_vci').textContent = avg_vci
+  document.getElementById('udata_pop').textContent = num_ppl
 } 
 
 function handleSelectChange() {
@@ -511,6 +521,7 @@ map.once('loadend', function(evt) {
 map.on('click', function(event) {
   // event.stopPropagation();
   map.forEachFeatureAtPixel(event.pixel, function(feature) {
+    console.log("heeeeere")
     let {County: county, pct_num: pnum, pct_name: pname} = feature.values_;
     pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
     displayPrecinctDetailModal(pname)
