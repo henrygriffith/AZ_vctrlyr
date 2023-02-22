@@ -37,7 +37,7 @@ let circling = false;
 
 let electioning = true;
 let elec_results;
-let universe = {}
+let precincts = {}
 let highlight;
 
 
@@ -99,47 +99,31 @@ function initializeApp() {
   univSelect.addEventListener('change', handleUniverseSelectChange)
 
   colorizePrecincts(defaultContest)
-  fetch("http://localhost:8000/univoters").then((res) => res.json()).then((reqd) => {
+  fetch("http://localhost:8000/univoters")
+  .then((res) => res.json()).then((reqd) => {
     console.log("ok...request came back now...")
     console.log("starting siphon: ")
     siphonUniverseDetails(reqd.data)
     console.log("done siphoning universe!")
     console.log("....aaaaaand here it is: ")
-    console.log(universe)
   })
 }
 
 function siphonUniverseDetails(dataset) {
   dataset.forEach((row) => {
-    let {precinct: prec, race: rc, vci, con_dist: CD, hse_dist: LD, county } = row
-    prec = pnameConversionChart[county.toUpperCase()][year](prec)
-    if (!universe.hasOwnProperty(prec)) {
-      universe[prec] = {
-        name: prec,
-        num_ppl: 1,
-        races: {
-          "Hispanic": 0,
-          "Caucasian": 0,
-          "Asian": 0,
-          "African American": 0,
-          "Native American": 0,
-          "Other": 0,
-        },
-        avg_vci: vci,
-        CD,
-        LD,
-      }
-      universe[prec]["races"][rc] += 1
-    } else {
-      universe[prec]["num_ppl"] += 1
-      universe[prec]["avg_vci"] += Number(vci)
-      universe[prec]["races"][rc] += 1
-    }
-  })
-  for (const prec in universe) 
-    universe[prec]["avg_vci"] = (universe[prec]["avg_vci"] / universe[prec]["num_ppl"]).toFixed(2)
+    let {pname, pocPerc, avg_vci, pop, CD, LD, county} = row
+    pname = pnameConversionChart[county][year](pname)
 
-  // applyOnClickListeners();
+
+    if (!precincts.hasOwnProperty(pname)) precincts[pname] = {}
+      precincts[pname].name = pname
+      precincts[pname].county = county
+      precincts[pname].poc_perc = pocPerc
+      precincts[pname].avg_vci = avg_vci
+      precincts[pname].universe_pop = pop
+      precincts[pname].CD = CD
+      precincts[pname].LD = LD
+  })
 }
 
 function setContestName(contest) {
@@ -307,7 +291,7 @@ const circlify = (contestName) => {
 }
 
 function displayPrecinctDetailModal(pname) {
-  const precObj = universe[pname]
+  const precObj = precincts[pname]
   const modal = document.getElementById("prec-modal")
   if (precObj) {
     console.log('setting to block')
@@ -317,13 +301,13 @@ function displayPrecinctDetailModal(pname) {
 }
 
 function setHTMLforModal(precObj) {
-  const { name, num_ppl, avg_vci, races, CD, LD } = precObj
+  const { name, universe_pop, avg_vci, CD, LD } = precObj
 
   document.getElementById('udata_pname').textContent = name
   document.getElementById('udata_cd').textContent = "CD: " + CD
   document.getElementById('udata_ld').textContent = "LD: " + LD
   document.getElementById('udata_vci').textContent = avg_vci
-  document.getElementById('udata_pop').textContent = num_ppl
+  document.getElementById('udata_pop').textContent = universe_pop
 } 
 
 function handleSelectChange() {
@@ -413,7 +397,7 @@ const getPrecinctVotes = (county, pname) => {
 const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
   const forks = {
     "metrics": {
-      "PEOPLE OF COLOR": (precObj) => findPercentagePOC(precObj)
+      "PEOPLE OF COLOR": (precObj) => precObj.poc_perc
     },
     "colors": {
       "PEOPLE OF COLOR": (metric) => getHowGreen(metric)
@@ -426,7 +410,7 @@ const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
         let {County: county, pct_num: pnum, pct_name: pname} = f.values_;
         pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
         console.log(pname)
-        let precObj = universe[pname] || {}
+        let precObj = precincts[pname] || {}
         // console.log(precObj)
         let metric, clr
 
@@ -448,8 +432,6 @@ const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
       })
     }
 }
-
-const findPercentagePOC = (precObj) => 1 - (precObj.races["Caucasian"] / precObj.num_ppl)
 
 const getAndWriteCandidates = (prec_obj, contest) => {
   const votes_box = document.getElementById('votes-cont')
@@ -521,7 +503,6 @@ map.once('loadend', function(evt) {
 map.on('click', function(event) {
   // event.stopPropagation();
   map.forEachFeatureAtPixel(event.pixel, function(feature) {
-    console.log("heeeeere")
     let {County: county, pct_num: pnum, pct_name: pname} = feature.values_;
     pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
     displayPrecinctDetailModal(pname)

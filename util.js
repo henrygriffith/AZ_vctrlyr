@@ -2,7 +2,7 @@
 export const pnameConversionChart = {
     "APACHE": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
     "COCHISE": { 2022: (pname, pnum) => pname.toUpperCase()},
-    "COCONINO": { 2022: (pname, pnum) => {
+    "COCONINO": { 2022: (pname, pnum = 0) => {
       if (pname.indexOf('Flagstaff') != -1) return `${pname.toUpperCase()} ${pnum}`
       else return pname.toUpperCase()
     }},
@@ -21,7 +21,7 @@ export const pnameConversionChart = {
     "MARICOPA": { 2022: (pname, pnum) => pname.toUpperCase()},
     "MOHAVE": { 2022: (pname, pnum) => pname.toUpperCase()},
     "NAVAJO": { 2022: (pname, pnum) => removeNumsFromFront(pname)},
-    "PIMA": { 2022: (pname, pnum) => "PRECINCT " + pnum.padStart(3, "0")},
+    "PIMA": { 2022: (pname, pnum = 0) => "PRECINCT " + pnum.padStart(3, "0")},
     "PINAL": { 2022: (pname, pnum) => pname.toUpperCase()},
     "SANTA CRUZ": { 2022: (pname, pnum) => pname.toUpperCase()},
     "YAVAPAI": { 2022: (pname, pnum) => pname.toUpperCase()},
