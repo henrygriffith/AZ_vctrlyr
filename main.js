@@ -40,7 +40,18 @@ let elec_results;
 let precincts = {}
 let highlight;
 
+const initialSQL = `
+        SELECT 
+            UPPER(precinct) AS pname, 
+            ROUND(AVG(CASE WHEN race!='Caucasian' THEN 1.0 ELSE 0 END), 2) AS pocPerc, 
+            ROUND(AVG(vci), 2) AS avg_vci, COUNT(vanid) AS pop, 
+            con_dist AS CD, 
+            hse_dist AS LD, 
+            UPPER(county) AS county
 
+        FROM univoters
+        GROUP BY pname
+        `
 // ############# LAYERS ##############
 const map = new Map({
   target: 'map',
@@ -86,6 +97,19 @@ let circles = new VectorLayer({
 })
 // ################################
 
+const get = async (sql, url = '/') => {
+  const response = await fetch("http://localhost:8000" + url, {
+    method: 'POST',
+    mode: 'cors',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({sql})
+  })
+  const data = await response.json();
+  return data
+}
+
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
   const select = document.getElementById('visual-select')
@@ -99,21 +123,20 @@ function initializeApp() {
   univSelect.addEventListener('change', handleUniverseSelectChange)
 
   colorizePrecincts(defaultContest)
-  fetch("http://localhost:8000/univoters")
-  .then((res) => res.json()).then((reqd) => {
-    console.log("ok...request came back now...")
-    console.log("starting siphon: ")
-    siphonUniverseDetails(reqd.data)
-    console.log("done siphoning universe!")
-    console.log("....aaaaaand here it is: ")
-  })
+  get(initialSQL, '/')
+    .then((res) => {
+      console.log("ok...request came back now...")
+      console.log("starting siphon: ")
+      siphonUniverseDetails(res.data)
+      console.log("done siphoning universe!")
+      console.log("....aaaaaand here it is: ")
+    })
 }
 
 function siphonUniverseDetails(dataset) {
   dataset.forEach((row) => {
     let {pname, pocPerc, avg_vci, pop, CD, LD, county} = row
     pname = pnameConversionChart[county][year](pname)
-
 
     if (!precincts.hasOwnProperty(pname)) precincts[pname] = {}
       precincts[pname].name = pname
@@ -317,13 +340,15 @@ function handleSelectChange() {
   colorizePrecincts(selectedContest, colorMode, false);
 }
 
-// currently needs to wait for fetch
+// view: new View({
+//   center: fromLonLat([-112, 34]),
+//   zoom: 7,
+// }),
+
 function handleUniverseSelectChange() {
   const colorMode = document.getElementById('univ-select').value;
-  console.log(colorMode)
   engageThrusters(colorMode)
-
-  //maybe a zoom in?
+  map.getView().animate({center: fromLonLat([-112.4, 33.5])}, {zoom: 9.75})
 }
 
 function handleAlphaBtn() {
@@ -411,12 +436,9 @@ const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
         pname = pnameConversionChart[county.toUpperCase()][year](pname, pnum)
         console.log(pname)
         let precObj = precincts[pname] || {}
-        // console.log(precObj)
         let metric, clr
 
         try {
-          console.log("type: ", requestedType)
-          console.log("precObj: ", precObj)
           metric = forks["metrics"][requestedType](precObj)
           clr = forks["colors"][requestedType](metric)
         } catch(err) { }
