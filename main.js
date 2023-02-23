@@ -112,11 +112,13 @@ const get = async (sql, url = '/') => {
 
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
+  const datamodeBtn = document.getElementById('datamode-toggle')
   const select = document.getElementById('visual-select')
   const alphaBtn = document.getElementById('alpha-btn')
   const circlesBtn = document.getElementById('circles-btn')
   const univSelect = document.getElementById('univ-select')
 
+  datamodeBtn.addEventListener('click', handleDataModeChange)
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
   circlesBtn.addEventListener('click', handleCirclesButton)
@@ -333,6 +335,40 @@ function setHTMLforModal(precObj) {
   document.getElementById('udata_pop').textContent = universe_pop
 } 
 
+function handleDataModeChange() {
+  const datamodeToggle = document.getElementById('datamode-toggle')
+  const alphaBtn = document.getElementById('alpha-btn')
+  const erSelect = document.getElementById('visual-select-cont')
+  const erBtnMenu = document.getElementById('visual-btn-menu')
+  const univSelect = document.getElementById('univ-select-cont')
+
+  console.log('hererererer')
+  console.log(erBtnMenu.childNodes)
+
+  if (electioning)  {
+    datamodeToggle.classList.remove('red')
+    datamodeToggle.classList.add('blue')
+    datamodeToggle.textContent = "Election Results"
+    univSelect.hidden = true;
+    erSelect.hidden = false;
+    erBtnMenu.style.display = 'flex'
+    colorizePrecincts(selectedContest || defaultContest)
+  } else {
+    datamodeToggle.classList.remove('blue')
+    datamodeToggle.classList.add('red')
+    datamodeToggle.textContent = "Canvassing"
+    univSelect.hidden = false;
+    alphaBtn.hidden = true;
+    erSelect.hidden = true;
+    erBtnMenu.style.display = 'none'
+
+    engageThrusters();
+  }
+
+  electioning = !electioning
+  console.log(electioning)
+}
+
 function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
   selectedColorMode = colorMode;
@@ -453,6 +489,7 @@ const engageThrusters = (requestedType = "PEOPLE OF COLOR") => {
         }))
       })
     }
+  map.getView().animate({center: fromLonLat([-112.4, 33.5])}, {zoom: 9.75})
 }
 
 const getAndWriteCandidates = (prec_obj, contest) => {
