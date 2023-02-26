@@ -1,6 +1,5 @@
 import { get } from './main'
 
-
 const LAST_DAY = '10/15/2022'
 
 const $QL = {
@@ -37,5 +36,3 @@ console.log(raceUpToDate)
 await get(raceForDate, '/').then((res) => console.log(res.data))
 await get(raceForDateRange, '/').then((res) => console.log(res.data))
 await get(raceUpToDate, '/').then((res) => console.log(res.data))
-
-
