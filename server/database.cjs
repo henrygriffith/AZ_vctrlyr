@@ -8,8 +8,8 @@ const db = new sqlite3.Database('data/az-canv-2022.db', sqlite3.OPEN_READONLY, (
     }
 });
 
-db.serialize(() => {
-    console.log(db)
-})
+// db.serialize(() => {
+//     console.log(db)
+// })
 
 module.exports = db

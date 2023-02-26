@@ -82,7 +82,7 @@
               <option value="LBT DISTRIBUTION">LBT DISTRIBUTION</option>
             </select>
           </div>
-          <div id="univ-select-cont">
+          <div id="univ-select-cont" style="display:none">
             <h2>Visualize Universe</h2>
             <select id="univ-select" class="ui selection dropdown">
               <option value="PEOPLE OF COLOR">PEOPLE OF COLOR</option> 
@@ -96,7 +96,18 @@
         
       </div>
     </div>
+    <div id="side-content">
+      <div id="side-left-panel">
+        <div id="side-left-grid">
+          <div id="test1"></div>
+          <div id="test2"></div>
+          <div id="test3"></div>
+        </div>
+      </div>
+      <div id="side-right-panel"></div>
+    </div>
     <script src="https://cdn.rawgit.com/openlayers/openlayers.github.io/master/en/v5.3.0/build/ol.js"></script>
     <script type="module" src="./main.js"></script>
+    <script type="module" src="./canvassing.js"></script>
   </body>
 </html>

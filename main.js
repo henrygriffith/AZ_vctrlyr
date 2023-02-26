@@ -41,17 +41,27 @@ let precincts = {}
 let highlight;
 
 const initialSQL = `
-        SELECT 
-            UPPER(precinct) AS pname, 
-            ROUND(AVG(CASE WHEN race!='Caucasian' THEN 1.0 ELSE 0 END), 2) AS pocPerc, 
-            ROUND(AVG(vci), 2) AS avg_vci, COUNT(vanid) AS pop, 
-            con_dist AS CD, 
-            hse_dist AS LD, 
-            UPPER(county) AS county
+  SELECT 
+    UPPER(precinct) AS pname, 
+    ROUND(AVG(CASE WHEN race!='Caucasian' THEN 1.0 ELSE 0 END), 2) AS pocPerc, 
+    ROUND(AVG(vci), 2) AS avg_vci, COUNT(vanid) AS pop, 
+    con_dist AS CD, 
+    hse_dist AS LD, 
+    UPPER(county) AS county
+  FROM univoters
+  GROUP BY pname
+`
 
-        FROM univoters
-        GROUP BY pname
-        `
+// const dynamicSQL = `
+//   SELECT
+//     v.race
+//     COUNT(v.race)
+//   FROM conthist AS c
+//   INNER JOIN repvoters AS v
+//   ON c.vanid=v.vanid
+//   WHERE c.result='Canvassed'
+//   GROUP BY c.dt_canv, v.race, v.precinct
+// `
 // ############# LAYERS ##############
 const map = new Map({
   target: 'map',
@@ -97,7 +107,8 @@ let circles = new VectorLayer({
 })
 // ################################
 
-const get = async (sql, url = '/') => {
+export const get = async (sql, url = '/') => {
+  console.log('called')
   const response = await fetch("http://localhost:8000" + url, {
     method: 'POST',
     mode: 'cors',
@@ -125,17 +136,18 @@ function initializeApp() {
   univSelect.addEventListener('change', handleUniverseSelectChange)
 
   colorizePrecincts(defaultContest)
-  get(initialSQL, '/')
-    .then((res) => {
-      console.log("ok...request came back now...")
-      console.log("starting siphon: ")
-      siphonUniverseDetails(res.data)
-      console.log("done siphoning universe!")
-      console.log("....aaaaaand here it is: ")
-    })
+  // get(initialSQL, '/')
+  //   .then((res) => {
+  //     console.log("ok...request came back now...")
+  //     console.log("starting siphon: ")
+  //     generatePrecObjs(res.data)
+  //     console.log("done siphoning universe!")
+  //     console.log("....aaaaaand here it is: ")
+  //   })
+
 }
 
-function siphonUniverseDetails(dataset) {
+function generatePrecObjs(dataset) {
   dataset.forEach((row) => {
     let {pname, pocPerc, avg_vci, pop, CD, LD, county} = row
     pname = pnameConversionChart[county][year](pname)
@@ -336,36 +348,44 @@ function setHTMLforModal(precObj) {
 } 
 
 function handleDataModeChange() {
+  electioning = !electioning
+
+  const mapPage = document.getElementById('main-cont')
+  const canvassPage = document.getElementById('side-cont')
+
   const datamodeToggle = document.getElementById('datamode-toggle')
   const alphaBtn = document.getElementById('alpha-btn')
   const erSelect = document.getElementById('visual-select-cont')
   const erBtnMenu = document.getElementById('visual-btn-menu')
   const univSelect = document.getElementById('univ-select-cont')
 
-  console.log('hererererer')
-  console.log(erBtnMenu.childNodes)
-
   if (electioning)  {
+    mapPage.style.display="flex"
+    canvassPage.style.display="none"
+
     datamodeToggle.classList.remove('red')
     datamodeToggle.classList.add('blue')
     datamodeToggle.textContent = "Election Results"
-    univSelect.hidden = true;
-    erSelect.hidden = false;
-    erBtnMenu.style.display = 'flex'
-    colorizePrecincts(selectedContest || defaultContest)
+    // univSelect.hidden = true;
+    // erSelect.hidden = false;
+    // erBtnMenu.style.display = 'flex'
+    // colorizePrecincts(selectedContest || defaultContest)
   } else {
+    mapPage.style.display="none"
+    canvassPage.style.display="flex"
+
     datamodeToggle.classList.remove('blue')
     datamodeToggle.classList.add('red')
     datamodeToggle.textContent = "Canvassing"
-    univSelect.hidden = false;
-    alphaBtn.hidden = true;
-    erSelect.hidden = true;
-    erBtnMenu.style.display = 'none'
 
-    engageThrusters();
+    // univSelect.hidden = false;
+    // alphaBtn.hidden = true;
+    // erSelect.hidden = true;
+    // erBtnMenu.style.display = 'none'
+
+    // engageThrusters();
   }
 
-  electioning = !electioning
   console.log(electioning)
 }
 

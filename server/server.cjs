@@ -17,12 +17,14 @@ app.listen(HTTP_PORT, () => {
 // All routes get sent to root endpoint with SQL query as part of the request body.
 app.post("/", (req, res, next) => {
     const {sql} = req.body
+    console.log(sql)
     db.all(sql, (err, rows) => {
         if (err) {
             console.log(sql)
             res.status(404).json({"error": err.message})
             return;
         }
+        console.log(rows)
         res.json({
             "message": "success",
             "data": rows

@@ -16,6 +16,8 @@ html, body {
   display: none;
 }
 
+/*#region ELECTION RESULTS*/
+
 #main-cont {
   display: flex;
   width: 100vw;
@@ -29,7 +31,6 @@ html, body {
 
 #map {
   width: 63vw;
-
 }
 
 #contest-name {
@@ -200,6 +201,46 @@ html, body {
   margin: 0 0.25em;
   display: inherit;
 }
+/*#endregion */
 
+/*#region CANVASSING */
+#side-content {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
 
+#side-left-panel {
+  display: flex;
+  flex: 4;
+  justify-content: center;
+  align-items: center;
+  background-color: black;
+}
+
+#side-left-grid {
+  display: grid;
+  width: 85%;
+  height: 85%;
+  background-color: white;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2em;
+}
+
+#test1 {
+background-color: yellow;
+}
+#test2 {
+background-color: orange;
+}
+#test3 {
+background-color: red;
+}
+
+#side-right-panel {
+  flex: 1;
+  background-color: slategray;
+}
+
+/*#endregion */
 
