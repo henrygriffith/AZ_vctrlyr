@@ -12,8 +12,8 @@ import Circle from 'ol/geom/Circle.js';
 import Feature from 'ol/Feature.js'
 
 import {pnameConversionChart} from './util.js';
+import { populateCanvassGrid } from './canvassing'
 
-// 'npm start' for live server in browser
 let year = 2022;
 let contest_arr = ["GOVERNOR", "U.S. SENATOR", "ATTORNEY GENERAL"]
 const LOW_VOTE_COUNT_THRESHOLD = 1000;
@@ -52,16 +52,6 @@ const initialSQL = `
   GROUP BY pname
 `
 
-// const dynamicSQL = `
-//   SELECT
-//     v.race
-//     COUNT(v.race)
-//   FROM conthist AS c
-//   INNER JOIN repvoters AS v
-//   ON c.vanid=v.vanid
-//   WHERE c.result='Canvassed'
-//   GROUP BY c.dt_canv, v.race, v.precinct
-// `
 // ############# LAYERS ##############
 const map = new Map({
   target: 'map',
@@ -108,7 +98,6 @@ let circles = new VectorLayer({
 // ################################
 
 export const get = async (sql, url = '/') => {
-  console.log('called')
   const response = await fetch("http://localhost:8000" + url, {
     method: 'POST',
     mode: 'cors',
@@ -144,7 +133,7 @@ function initializeApp() {
   //     console.log("done siphoning universe!")
   //     console.log("....aaaaaand here it is: ")
   //   })
-
+  populateCanvassGrid()
 }
 
 function generatePrecObjs(dataset) {
@@ -352,6 +341,7 @@ function handleDataModeChange() {
 
   const mapPage = document.getElementById('main-cont')
   const canvassPage = document.getElementById('side-cont')
+  console.log("pre-canvasspage: ", canvassPage)
 
   const datamodeToggle = document.getElementById('datamode-toggle')
   const alphaBtn = document.getElementById('alpha-btn')
@@ -366,24 +356,14 @@ function handleDataModeChange() {
     datamodeToggle.classList.remove('red')
     datamodeToggle.classList.add('blue')
     datamodeToggle.textContent = "Election Results"
-    // univSelect.hidden = true;
-    // erSelect.hidden = false;
-    // erBtnMenu.style.display = 'flex'
-    // colorizePrecincts(selectedContest || defaultContest)
   } else {
+    console.log(canvassPage)
     mapPage.style.display="none"
     canvassPage.style.display="flex"
 
     datamodeToggle.classList.remove('blue')
     datamodeToggle.classList.add('red')
     datamodeToggle.textContent = "Canvassing"
-
-    // univSelect.hidden = false;
-    // alphaBtn.hidden = true;
-    // erSelect.hidden = true;
-    // erBtnMenu.style.display = 'none'
-
-    // engageThrusters();
   }
 
   console.log(electioning)
@@ -395,11 +375,6 @@ function handleSelectChange() {
 
   colorizePrecincts(selectedContest, colorMode, false);
 }
-
-// view: new View({
-//   center: fromLonLat([-112, 34]),
-//   zoom: 7,
-// }),
 
 function handleUniverseSelectChange() {
   const colorMode = document.getElementById('univ-select').value;

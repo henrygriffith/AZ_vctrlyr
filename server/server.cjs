@@ -20,7 +20,6 @@ app.post("/", (req, res, next) => {
     console.log(sql)
     db.all(sql, (err, rows) => {
         if (err) {
-            console.log(sql)
             res.status(404).json({"error": err.message})
             return;
         }

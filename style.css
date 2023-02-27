@@ -204,7 +204,7 @@ html, body {
 /*#endregion */
 
 /*#region CANVASSING */
-#side-content {
+#side-cont {
   display: flex;
   width: 100vw;
   height: 100vh;
@@ -222,25 +222,46 @@ html, body {
   display: grid;
   width: 85%;
   height: 85%;
-  background-color: white;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 2em;
 }
 
-#test1 {
-background-color: yellow;
+.side-left-grid-col {
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
-#test2 {
-background-color: orange;
+
+.side-left-grid-col-hdr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 2em;
+  text-align: end;
 }
-#test3 {
-background-color: red;
+.side-left-grid-col-hdr > div {
+  margin: 0.25em 0;
+}
+
+.side-left-grid-item-cont {
+  margin: 1.5em 0;
+  text-align: end;
+}
+
+.item {
+  font-weight: 800;
+  font-size: 1.5em;
+  margin: 8px 0;
 }
 
 #side-right-panel {
   flex: 1;
   background-color: slategray;
 }
+
 
 /*#endregion */
 
