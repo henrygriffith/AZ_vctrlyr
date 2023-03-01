@@ -5,7 +5,7 @@
   "typings": "dist/*.d.ts",
   "scripts": {
     "express": "node ./server/server.cjs",
-    "start": "vite",
+    "start": "vite --host",
     "build": "vite build",
     "serve": "vite preview"
   },

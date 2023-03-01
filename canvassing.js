@@ -1,23 +1,29 @@
 import { get } from './main'
 
+let day = '07/10/2022'
+let weekStart = '07/04/2022'
 
-const SELECTED_DAY = '07/10/2022'
-const SELECTED_DAY_MINUS_WEEK = '07/04/2022'
-const LAST_DAY = '10/15/2022'
+const possibleCategoriesFor = {
+    'race': ['African American', 'Asian', 'Caucasian', 'Hispanic', 'Native American', 'Unknown']
+}
+
 const $QL = {
     'SPECIFIC_DATE': (dt) => `c.dt_canv = '${dt}'`,
     'DATE_RANGE':  (start_dt, end_dt) => `c.dt_canv >= '${start_dt}' AND c.dt_canv <= '${end_dt}'`,
-    'UP_TO_DATE': (dt) => `c.dt_canv <= '${dt}'`
+    'UP_TO_DATE': (dt) => `c.dt_canv <= '${dt}'`,
+
+    'CANVASSED': () => `c.result = 'Canvassed'`
 }
 
-const createSQL = (inp = 'race', condArr) => {
-    let condString = condArr.join(' AND ')
+let selectedInput = 'race'
 
+const createSQL = (inp = 'race', condArr, addlConds = []) => {
+    condArr = condArr.concat(addlConds)
+    let condString = condArr.join(' AND ')
     let sql = `
     SELECT 
         COUNT(v.${inp}) AS count, 
-        v.${inp},
-        COUNT(*) AS total
+        v.${inp}
     FROM conthist AS c 
     INNER JOIN repvoters AS v 
     ON c.vanid = v.vanid 
@@ -27,41 +33,65 @@ const createSQL = (inp = 'race', condArr) => {
     return sql
 }
 
-export const populateCanvassGrid = () => {
-    // boolean to check for race names gotten
-    const grid = document.getElementById('side-left-grid')
+const onDateCond = (dt) => $QL['SPECIFIC_DATE'](dt)
+const dateRangeCond = (dt1, dt2) => $QL['DATE_RANGE'](dt1, dt2)
+const upToDateCond = (dt) => $QL['UP_TO_DATE'](dt)
 
-    const raceForDate = createSQL('race', [$QL['SPECIFIC_DATE'](SELECTED_DAY)])
-    const raceForDateRange = createSQL('race', [$QL['DATE_RANGE'](SELECTED_DAY_MINUS_WEEK, SELECTED_DAY)])
-    const raceUpToDate = createSQL('race', [$QL['UP_TO_DATE'](SELECTED_DAY)])
+const isCanvassed = () => $QL['CANVASSED']()
 
-    get(raceForDate, '/').then((res) => affixSQLtoHTML(res.data, 'day of', SELECTED_DAY, grid, 0))
-    get(raceForDateRange, '/').then((res) => affixSQLtoHTML(res.data, 'week ending', SELECTED_DAY, grid, 1))
-    get(raceUpToDate, '/').then((res) => affixSQLtoHTML(res.data, 'campaign up to', SELECTED_DAY, grid, 2))
-}
-
-const affixSQLtoHTML = (data, header, day, parent, n) => {
-    // bool checker
-        // then loop thru to get names (order matters here)
-    const newHome = parent.children.item(n)
-    newHome.innerHTML = `
-    <div class='side-left-grid-col-hdr'>
-        <div>${header}</div>
-        <div>${day}</div>
-    </div>
-    <div class='side-left-grid-item-cont'>
-    </div>
-    `
-    let tot = 0
-    data.forEach((dgrp) => {
-        tot += dgrp.count;
-        const html = `
-
-        <div class='item'>
-            <span>${dgrp.count}</span>
-        </div>`
-        parent.children.item(n).children.item(1).innerHTML += html
+const prosthesifySQL = (sqlRows) => {
+    const inp = selectedInput
+    const limbs = possibleCategoriesFor[inp]
+    limbs.forEach((lmb) => {
+        if (sqlRows.some(obj => obj[inp] === lmb)) return;
+        else sqlRows.push({ [inp]: lmb, count: 0})
     })
+    return sqlRows.sort((a, b) => a[inp].localeCompare(b[inp]))
 }
 
+export const populateCanvassGrid = () => {
+    const grid = document.getElementById('side-left-grid'),
+        categoriesCol = document.getElementById('side-left-categories-col')
+    categoriesCol.innerHTML = `
+    <div class='side-left-grid-col-hdr'>
+    </div>
+    <div id='side-left-grid-cat-cont' class='side-left-grid-item-cont'></div>
+    <div id='side-left-grid-cat-cont2' class='side-left-grid-item-cont'></div>
+    `
 
+    const onDateAll = createSQL(selectedInput, [onDateCond(day)]),
+        weekUpToDateAll = createSQL(selectedInput, [dateRangeCond(weekStart, day)]),
+        upToDateAll = createSQL(selectedInput, [upToDateCond(day)])
+
+    const onDateCanv = createSQL(selectedInput, [onDateCond(day), isCanvassed()]),
+        weekUpToDateCanv = createSQL(selectedInput, [dateRangeCond(weekStart, day), isCanvassed()]),
+        upToDateCanv = createSQL(selectedInput, [upToDateCond(day), isCanvassed()])
+
+    const affixSQLtoHTML = (data, day, n, isCanv = false) => {
+        const catCol = grid.children.item(0)
+        const col = grid.children.item(n)
+        const itemCont = col.children.item(isCanv ? 2 : 1)
+        const hdr = col.children.item(0)
+        const dateText = hdr.children.item(1)
+        let computedInputTotal = 0;
+
+        dateText.innerHTML = day;
+        data.forEach((dgrp) => {
+            if (n === 1) {
+                const catItemCont = catCol.children.item(isCanv ? 2 : 1)
+                catItemCont.innerHTML += `<div class='side-left-grid-item'>${dgrp[selectedInput]}</div>`
+            }
+            computedInputTotal += dgrp.count
+            const html = `<div class='side-left-grid-item'><span>${dgrp.count}</span></div>`
+            itemCont.innerHTML += html
+        })
+    }
+
+    get(onDateAll, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 1))
+    get(weekUpToDateAll, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 2))
+    get(upToDateAll, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 3))
+
+    get(onDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 1, true))
+    get(weekUpToDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 2, true))
+    get(upToDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 3, true))
+}
