@@ -12,10 +12,6 @@ html, body {
   display: flex;
 }
 
-.hide {
-  display: none;
-}
-
 /*#region ELECTION RESULTS*/
 
 #main-cont {

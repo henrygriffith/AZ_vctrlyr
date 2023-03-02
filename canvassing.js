@@ -95,3 +95,12 @@ export const populateCanvassGrid = () => {
     get(weekUpToDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 2, true))
     get(upToDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 3, true))
 }
+
+function initializeSide() {
+    console.log('calling intialize')
+    populateCanvassGrid();
+}
+
+window.onload = function () {
+    initializeSide()
+}

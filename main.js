@@ -42,18 +42,6 @@ let elec_results;
 let precincts = {}
 let highlight;
 
-// const initialSQL = `
-//   SELECT 
-//     UPPER(precinct) AS pname, 
-//     ROUND(AVG(CASE WHEN race!='Caucasian' THEN 1.0 ELSE 0 END), 2) AS pocPerc, 
-//     ROUND(AVG(vci), 2) AS avg_vci, COUNT(vanid) AS pop, 
-//     con_dist AS CD, 
-//     hse_dist AS LD, 
-//     UPPER(county) AS county
-//   FROM univoters
-//   GROUP BY pname
-// `
-
 // ############# LAYERS ##############
 const map = new Map({
   target: 'map',
@@ -114,47 +102,21 @@ export const get = async (sql, url = '/') => {
 
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
-  // const datamodeBtn = document.getElementById('datamode-toggle')
   const select = document.getElementById('visual-select')
   const alphaBtn = document.getElementById('alpha-btn')
   const circlesBtn = document.getElementById('circles-btn')
-  // const univSelect = document.getElementById('univ-select')
 
-  // datamodeBtn.addEventListener('click', handleDataModeChange)
   select.addEventListener('change', handleSelectChange)
   alphaBtn.addEventListener('click', handleAlphaBtn)
   circlesBtn.addEventListener('click', handleCirclesButton)
-  // univSelect.addEventListener('change', handleUniverseSelectChange)
 
   colorizePrecincts(defaultContest)
-  // get(initialSQL, '/')
-  //   .then((res) => {
-  //     console.log("ok...request came back now...")
-  //     console.log("starting siphon: ")
-  //     generatePrecObjs(res.data)
-  //     console.log("done siphoning universe!")
-  //     console.log("....aaaaaand here it is: ")
-  //   })
-  populateCanvassGrid()
   let window2 = window.open('/index2.html')
   globalThis.win2 = window2
+  console.log(globalThis)
+  console.log("document: ", globalThis.win2.document)
+  // populateCanvassGrid()
 }
-
-// function generatePrecObjs(dataset) {
-//   dataset.forEach((row) => {
-//     let {pname, pocPerc, avg_vci, pop, CD, LD, county} = row
-//     pname = pnameConversionChart[county][year](pname)
-
-//     if (!precincts.hasOwnProperty(pname)) precincts[pname] = {}
-//       precincts[pname].name = pname
-//       precincts[pname].county = county
-//       precincts[pname].poc_perc = pocPerc
-//       precincts[pname].avg_vci = avg_vci
-//       precincts[pname].universe_pop = pop
-//       precincts[pname].CD = CD
-//       precincts[pname].LD = LD
-//   })
-// }
 
 function setContestName(contest) {
   document.getElementById('contest-name').innerHTML = contest;
@@ -320,62 +282,12 @@ const circlify = (contestName) => {
   }
 }
 
-// function displayPrecinctDetailModal(pname) {
-//   const precObj = precincts[pname]
-//   const modal = document.getElementById("prec-modal")
-//   if (precObj) {
-//     console.log('setting to block')
-//     modal.style.display = 'block';
-//     setHTMLforModal(precObj)
-//   } 
-// }
-
-// function setHTMLforModal(precObj) {
-//   const { name, universe_pop, avg_vci, CD, LD } = precObj
-
-//   document.getElementById('udata_pname').textContent = name
-//   document.getElementById('udata_cd').textContent = "CD: " + CD
-//   document.getElementById('udata_ld').textContent = "LD: " + LD
-//   document.getElementById('udata_vci').textContent = avg_vci
-//   document.getElementById('udata_pop').textContent = universe_pop
-// } 
-
-// function handleDataModeChange() {
-//   electioning = !electioning
-
-//   const mapPage = document.getElementById('main-cont')
-//   const canvassPage = document.getElementById('side-cont')
-//   const datamodeToggle = document.getElementById('datamode-toggle')
-
-//   if (electioning)  {
-//     mapPage.style.display="flex"
-//     canvassPage.style.display="none"
-
-//     datamodeToggle.classList.remove('red')
-//     datamodeToggle.classList.add('blue')
-//     datamodeToggle.textContent = "Election Results"
-//   } else {
-//     mapPage.style.display="none"
-//     canvassPage.style.display="flex"
-
-//     datamodeToggle.classList.remove('blue')
-//     datamodeToggle.classList.add('red')
-//     datamodeToggle.textContent = "Canvassing"
-//   }
-// }
-
 function handleSelectChange() {
   const colorMode = document.getElementById('visual-select').value;
   selectedColorMode = colorMode;
 
   colorizePrecincts(selectedContest, colorMode, false);
 }
-
-// function handleUniverseSelectChange() {
-//   const colorMode = document.getElementById('univ-select').value;
-//   engageThrusters(colorMode)
-//   map.getView().animate({center: fromLonLat([-112.4, 33.5])}, {zoom: 9.75})
-// }
 
 function handleAlphaBtn() {
   const colorMode = document.getElementById('visual-select').value;
@@ -394,17 +306,6 @@ function getAlphaValue(total_votes, threshold, minAlpha = .4, maxAlpha = 1) {
 
  return minAlpha + (maxAlpha - minAlpha)  * (total_votes / threshold)
 }
-
-// const featureOverlay = new VectorLayer({
-//   source: new VectorSource(),
-//   map: map,
-//   style: new Style({
-//     stroke: new Stroke({
-//       color: 'rgba(255, 255, 255, 1)',
-//       width: 2,
-//     }),
-//   }),
-// })
 
 const displayFeatureInfo = function (pixel) {
   const feature = map.forEachFeatureAtPixel(pixel, function (feature) {
@@ -425,22 +326,10 @@ const displayFeatureInfo = function (pixel) {
     symbol_ele.innerHTML = "::"
     pname_ele.innerHTML = pname || '&nbsp;';
 
-    win2.document.getElementById("window-test").innerHTML = pname;
-
     const prec_obj = getPrecinctVotes(county, pname);
     const curr_contest = selectedContest || defaultContest;
     getAndWriteCandidates(prec_obj, curr_contest);
   }
-
-  // if (feature !== highlight) {
-  //   if (highlight) {
-  //     featureOverlay.getSource().removeFeature(highlight);
-  //   }
-  //   if (feature) {
-  //     featureOverlay.getSource().addFeature(feature);
-  //   }
-  //   highlight = feature;
-  // }
 }
 
 const getPrecinctVotes = (county, pname) => {
