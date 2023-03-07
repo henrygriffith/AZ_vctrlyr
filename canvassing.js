@@ -4,7 +4,8 @@ let day = '07/10/2022'
 let weekStart = '07/04/2022'
 
 const possibleCategoriesFor = {
-    'race': ['African American', 'Asian', 'Caucasian', 'Hispanic', 'Native American', 'Unknown']
+    'race': ['African American', 'Asian', 'Caucasian', 'Hispanic', 'Native American', 'Unknown'],
+    'age': ['18-24', '25-34', '35-44', '45-64', '65+', 'else'],
 }
 
 const $QL = {
@@ -15,20 +16,63 @@ const $QL = {
     'CANVASSED': () => `c.result = 'Canvassed'`
 }
 
+const selects = {
+    'race': () => `COUNT(v.race) AS count, v.race` ,
+    'age': () => `
+    CASE WHEN v.age BETWEEN 18 AND 24 THEN '18-24'
+    WHEN v.age BETWEEN 25 AND 34 THEN '25-34'
+    WHEN v.age BETWEEN 35 AND 44 THEN '35-44'
+    WHEN v.age BETWEEN 45 AND 64 THEN '25-34'
+    WHEN v.age >= 65 THEN '65+' else 'else' end age_group,
+    COUNT(1)
+    `
+}
+
+const groupBy = {
+    'race': () => `v.race`,
+    'age': () => `case when v.age between 18 and 24 then '18-24' 
+    when v.age between 25 and 34 then '25-34' 
+    when v.age between 35 and 44 then '35-44'
+    when v.age between 45 and 64 then '45-64'
+    when v.age >= 65 then '65+
+    else 'else' end
+    `
+}
+
 let selectedInput = 'race'
+
+window.onload = function () {
+    initializeSide()
+}
+
+function initializeSide() {
+    const inpSelect = document.getElementById('canvass-input-select');
+    inpSelect.addEventListener('change', handleInputSelectChange)
+
+    populateCanvassGrid();
+}
+
+const handleInputSelectChange = () => {
+    const newInp = document.getElementById('canvass-input-select').value
+    selectedInput = newInp
+    populateCanvassGrid()
+}
+
 
 const createSQL = (inp = 'race', condArr, addlConds = []) => {
     condArr = condArr.concat(addlConds)
     let condString = condArr.join(' AND ')
+    let selectString = selects[inp]()
+    let groupByString = groupBy[inp]()
     let sql = `
     SELECT 
-        COUNT(v.${inp}) AS count, 
-        v.${inp}
+        ${selectString}
     FROM conthist AS c 
     INNER JOIN repvoters AS v 
     ON c.vanid = v.vanid 
     WHERE ${condString}
-    GROUP BY v.${inp}`
+    GROUP BY ${groupByString}
+    `
 
     return sql
 }
@@ -96,11 +140,4 @@ export const populateCanvassGrid = () => {
     get(upToDateCanv, '/').then((res) => affixSQLtoHTML(prosthesifySQL(res.data), day, 3, true))
 }
 
-function initializeSide() {
-    console.log('calling intialize')
-    populateCanvassGrid();
-}
 
-window.onload = function () {
-    initializeSide()
-}
