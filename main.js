@@ -12,7 +12,6 @@ import Circle from 'ol/geom/Circle.js';
 import Feature from 'ol/Feature.js'
 
 import {pnameConversionChart} from './util.js';
-import { populateCanvassGrid } from './canvassing'
 
 let window2;
 
@@ -100,6 +99,22 @@ export const get = async (sql, url = '/') => {
   return data
 }
 
+function loadInitialData() {
+  let window2 = window.open('/index2.html')
+  globalThis.win2 = window2
+  fetch('./data/er2022.json')
+    .then((response) => response.json())
+    .then((json) => {
+      elec_results = json
+    }).then(() => {
+      if (contestsAreDisplayed === false) {
+        displayContests();
+        contestsAreDisplayed = true;
+      }
+  });
+  console.log('loadinitialdata called')
+}
+
 function initializeApp() {
   document.getElementById('contest-name').innerHTML = defaultContest;
   const select = document.getElementById('visual-select')
@@ -111,11 +126,7 @@ function initializeApp() {
   circlesBtn.addEventListener('click', handleCirclesButton)
 
   colorizePrecincts(defaultContest)
-  let window2 = window.open('/index2.html')
-  globalThis.win2 = window2
-  console.log(globalThis)
-  console.log("document: ", globalThis.win2.document)
-  // populateCanvassGrid()
+  console.log('initializeApp called')
 }
 
 function setContestName(contest) {
@@ -423,22 +434,12 @@ const displayContests = () => {
 }
 
 // ############ EVENTS #############
-map.on('loadstart', async function(evt){
-  fetch('./data/er2022.json')
-    .then((response) => response.json())
-    .then((json) => {
-      elec_results = json
-    }).then(() => {
-      if (contestsAreDisplayed === false) {
-        displayContests();
-        contestsAreDisplayed = true;
-      }
-  });
-});
 
-map.once('loadend', function(evt) {
+map.on('loadstart', function(evt) {
+  loadInitialData();
+})
+map.on('loadend', function(evt) {
   initializeApp();
-  console.log(document.getElementById('map').children)
 })
 
 map.on('click', function(event) {
